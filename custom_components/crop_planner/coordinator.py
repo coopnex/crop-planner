@@ -35,7 +35,6 @@ class CropPlannerCoordinator(DataUpdateCoordinator):
         super().__init__(
             hass,
             logger = logger,
-            config_entry=config_entry,
             name="Crop Planner",
             update_interval=None,
         )
@@ -44,34 +43,34 @@ class CropPlannerCoordinator(DataUpdateCoordinator):
         self._name = "Crop Planner"
         self._attr_unique_id = self.config_entry.entry_id
         self._config_entries = []
-        self._device_id = None
+        self._device_id = self.config_entry.entry_id
         self.entity_id = async_generate_entity_id(
             f"{DOMAIN}.{{}}", self._name, current_ids={}
         )
 
     @property
-    def unique_id(self) -> bool:
+    def unique_id(self) -> str:
         return self._attr_unique_id
 
     @property
     def device_id(self) -> str:
-        """The device ID used for all the entities"""
+        """The device ID used for all the entities."""
         return self._device_id
 
     @property
     def device_info(self) -> dict:
-        """Device info for devices"""
+        """Device info for devices."""
         return {
             "identifiers": {(DOMAIN, self.unique_id)},
             "name": self.name,
             "config_entries": self._config_entries,
             "model": self.name,
-            "manufacturer": 'Crop Planner',
+            "manufacturer": "Crop Planner",
         }
 
 
     def update_registry(self) -> None:
-        """Update registry with correct data"""
+        """Update registry with correct data."""
         # Is there a better way to add an entity to the device registry?
 
         device_registry = dr.async_get(self._hass)
@@ -79,8 +78,8 @@ class CropPlannerCoordinator(DataUpdateCoordinator):
             config_entry_id=self._config.entry_id,
             identifiers={(DOMAIN, self.unique_id)},
             name=self.name,
-            model='Crop Planner',
-            manufacturer='Crop Planner',
+            model="Crop Planner",
+            manufacturer="Crop Planner",
         )
         if self._device_id is None:
             device = device_registry.async_get_device(

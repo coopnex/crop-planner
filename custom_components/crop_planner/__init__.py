@@ -15,7 +15,6 @@ from homeassistant.loader import async_get_loaded_integration
 
 from custom_components.crop_planner.coordinator import CropPlannerCoordinator
 from custom_components.crop_planner.data import CropPlannerConfigEntry, CropPlannerData
-
 from custom_components.crop_planner.service import register_component_services
 
 from .const import ATTR_CROP, COMPONENT, COORDINATOR, DOMAIN, LOGGER

@@ -1,0 +1,31 @@
+[build-system]
+requires = ["setuptools==78.1.1"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "crop_planner"
+version = "0.1.0"
+license = "Apache-2.0"
+license-files = ["LICENSE*"]
+description = "A crop planning tool for Home Assistant"
+readme = "README.md"
+authors = [
+  { name = "The Crop Planner authors", email = "crop_planner@coopnex.io" },
+]
+keywords = ["home", "automation"]
+classifiers = [
+  "Development Status :: 5 - Production/Stable",
+  "Intended Audience :: End Users/Desktop",
+  "Intended Audience :: Developers",
+  "Operating System :: OS Independent",
+  "Programming Language :: Python :: 3.13",
+  "Topic :: Home Automation",
+]
+requires-python = ">=3.13.2"
+dependencies = []
+
+[tool.setuptools.packages.find]
+where = ["custom_components"]  # list of folders that contain the packages (["."] by default)
+include = ["*"]  # package names should match these glob patterns (["*"] by default)
+exclude = []  # exclude packages matching these glob patterns (empty by default)
+namespaces = false  # to disable scanning PEP 420 namespaces (true by default)
