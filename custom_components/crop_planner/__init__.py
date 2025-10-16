@@ -16,6 +16,8 @@ from homeassistant.loader import async_get_loaded_integration
 from custom_components.crop_planner.coordinator import CropPlannerCoordinator
 from custom_components.crop_planner.data import CropPlannerConfigEntry, CropPlannerData
 
+from custom_components.crop_planner.service import register_component_services
+
 from .const import ATTR_CROP, COMPONENT, COORDINATOR, DOMAIN, LOGGER
 
 PLATFORMS = []
@@ -57,8 +59,8 @@ async def async_setup_entry(hass: HomeAssistant, entry: CropPlannerConfigEntry) 
     hass.data[DOMAIN][COORDINATOR] = coordinator
 
     component = EntityComponent(LOGGER, DOMAIN, hass)
-    # hass.data[DOMAIN][COMPONENT] = component
-    # register_component_services(component, coordinator)
+    hass.data[DOMAIN][COMPONENT] = component
+    register_component_services(component, coordinator)
 
     # cropPlanner = CropPlanner(hass, entry)
     # hass.data[DOMAIN][entry.entry_id] = cropPlanner

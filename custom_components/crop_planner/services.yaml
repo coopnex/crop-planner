@@ -1,0 +1,23 @@
+create_crop:
+  name: Create Crop
+  description: Creates a new crop entry
+  fields:
+    name:
+      name: Name
+      description: Name of the crop
+      required: true
+      example: Tomate de colgar
+      selector:
+        text:
+    quantity:
+      name: Quantity
+      description: Number of plants in the crop
+      example: 1
+      required: true
+      default: 1
+      selector:
+        number:
+          min: 1
+          max: 50
+          mode: box
+          unit_of_measurement: plants
