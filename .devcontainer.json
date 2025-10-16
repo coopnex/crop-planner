@@ -1,5 +1,5 @@
 {
-    "name": "ludeeus/integration_blueprint",
+    "name": "Crop Planner Dev Container",
     "image": "mcr.microsoft.com/devcontainers/python:3.13",
     "postCreateCommand": "scripts/setup",
     "forwardPorts": [
@@ -18,7 +18,11 @@
                 "github.vscode-pull-request-github",
                 "ms-python.python",
                 "ms-python.vscode-pylance",
-                "ryanluker.vscode-coverage-gutters"
+                "ryanluker.vscode-coverage-gutters",
+                "visualstudioexptteam.vscodeintellicode",
+                "redhat.vscode-yaml",
+                "esbenp.prettier-vscode",
+                "GitHub.copilot"
             ],
             "settings": {
                 "files.eol": "\n",
@@ -29,7 +33,22 @@
                 "files.trimTrailingWhitespace": true,
                 "python.analysis.typeCheckingMode": "basic",
                 "python.analysis.autoImportCompletions": true,
-                "python.defaultInterpreterPath": "/usr/local/bin/python",
+                "python.experiments.optOutFrom": [
+                    "pythonTestAdapter"
+                ],
+                "python.defaultInterpreterPath": "/home/vscode/.local/ha-venv/bin/python",
+                "python.pythonPath": "/home/vscode/.local/ha-venv/bin/python",
+                "python.terminal.activateEnvInCurrentTerminal": true,
+                "python.testing.pytestArgs": [
+                    "--no-cov"
+                ],
+                "pylint.importStrategy": "fromEnvironment",
+                "terminal.integrated.profiles.linux": {
+                  "zsh": {
+                    "path": "/usr/bin/zsh"
+                  }
+                },
+                "terminal.integrated.defaultProfile.linux": "zsh",                
                 "[python]": {
                     "editor.defaultFormatter": "charliermarsh.ruff"
                 }

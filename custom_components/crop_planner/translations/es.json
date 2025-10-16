@@ -1,0 +1,30 @@
+{
+  "config": {
+      "step": {
+          "user": {
+              "data": {
+                  "entity_id": "Input sensor",
+                  "name": "Name"
+              },
+              "description": "Se creará una instancia de Crop Planner en tu sistema."
+          }
+      }
+  },
+  "services": {
+    "create_crop": {
+      "name": "Crear cultivo",
+      "description": "Crea una nueva entrada de cultivo",
+      "fields": {
+        "name": {
+          "name": "Nombre del cultivo",
+          "description": "Nombre del cultivo",
+          "example": "Tomate de colgar"
+        },
+        "quantity": {
+          "name": "Cantidad",
+          "description": "Número de plantas en el cultivo"
+        }
+      }
+    }
+  }
+}
