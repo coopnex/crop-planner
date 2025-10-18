@@ -37,15 +37,16 @@ def setup(hass: HomeAssistant, config: ConfigType) -> bool:
 
 async def async_setup(hass: HomeAssistant, config: Config) -> bool:
     """Set up this integration using YAML."""
+    hass.data[DOMAIN] = {}
+    hass.data.setdefault(DOMAIN, {})
+    component = EntityComponent(LOGGER, DOMAIN, hass)
+    hass.data[DOMAIN][COMPONENT] = component
+    register_component_services(component)
     return True
 
 
 async def async_setup_entry(hass: HomeAssistant, entry: CropPlannerConfigEntry) -> bool:
     """Set up this integration using UI."""
-    hass.data[DOMAIN] = {}
-    hass.data.setdefault(DOMAIN, {})
-    hass.data[DOMAIN].setdefault(entry.entry_id, {})
-
     coordinator = CropPlannerCoordinator(hass=hass, config_entry=entry, logger=LOGGER)
     entry.runtime_data = CropPlannerData(
         integration=async_get_loaded_integration(hass, entry.domain),
@@ -55,18 +56,15 @@ async def async_setup_entry(hass: HomeAssistant, entry: CropPlannerConfigEntry) 
     hass.data[DOMAIN][COORDINATOR] = coordinator
     coordinator.update_registry()
 
-    component = EntityComponent(LOGGER, DOMAIN, hass)
-    hass.data[DOMAIN][COMPONENT] = component
-    register_component_services(component, coordinator)
-
     await coordinator.async_config_entry_first_refresh()
 
     crops = [
         Crop(hass, create_crop_data(crop_data))
         for crop_data in entry.data.get("crops", [])
     ]
-
     LOGGER.info("Setting up crops: %s", crops)
+
+    component = hass.data[DOMAIN][COMPONENT]
     await component.async_add_entities(crops)
     entry.runtime_data.crops = crops
 

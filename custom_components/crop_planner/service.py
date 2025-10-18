@@ -38,9 +38,7 @@ CREATE_CROP_SCHEMA = vol.Schema(
 _component = None
 
 
-def register_component_services(
-    component: EntityComponent, coordinator: CropPlannerCoordinator
-) -> None:
+def register_component_services(component: EntityComponent) -> None:
     """Register the component."""
     _component = component
 

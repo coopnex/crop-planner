@@ -37,6 +37,7 @@ class CropPlannerCalendar(CalendarEntity):
     """Representation of a Sensor."""
 
     _attr_name = "Crop Calendar"
+    attr_has_entity_name = True
 
     def __init__(self, hass: HomeAssistant, entry: CropPlannerConfigEntry) -> None:
         """Initialize the CropPlannerCalendar entity."""
