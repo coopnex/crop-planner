@@ -1,0 +1,45 @@
+{
+  "config": {
+      "step": {
+          "user": {
+              "data": {
+                  "entity_id": "Input sensor",
+                  "name": "Name"
+              },
+              "description": "Se creará una instancia de Crop Planner en tu sistema."
+          }
+      }
+  },
+  "services": {
+    "create_crop": {
+      "name": "Crear cultivo",
+      "description": "Crea una nueva entrada de cultivo",
+      "fields": {
+        "name": {
+          "name": "Nombre del cultivo",
+          "description": "Nombre del cultivo",
+          "example": "Tomate de colgar"
+        },
+        "quantity": {
+          "name": "Cantidad",
+          "description": "Número de plantas en el cultivo"
+        },
+        "sowing_date": {
+          "name": "Fecha de siembra",
+          "description": "Fecha en la que se sembró el cultivo",
+          "example": "2024-04-15"
+        }
+      }
+    }
+  },
+  "entity_component": {
+    "_": {
+      "state_attributes": {
+        "name": { "name": "Nombre" },
+        "quantity": { "name": "Cantidad" },
+        "sowing_date": { "name": "Fecha de siembra" },
+        "species": { "name": "Especie" }
+      }
+    }
+  }
+}

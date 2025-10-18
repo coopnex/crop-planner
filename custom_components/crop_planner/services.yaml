@@ -1,0 +1,41 @@
+create_crop:
+  name: Create Crop
+  description: Creates a new crop entry
+  fields:
+    name:
+      name: Name
+      description: Name of the crop
+      required: true
+      example: Tomate de colgar
+      selector:
+        text:
+    quantity:
+      name: Quantity
+      description: Number of plants in the crop
+      example: 1
+      required: true
+      default: 1
+      selector:
+        number:
+          min: 1
+          max: 50
+          mode: box
+          unit_of_measurement: plants
+    sowing_date:
+      required: false
+      name: Sowing Date
+      description: Date when the crop was sown
+      example: "2024-04-15"
+      # Selector (https://www.home-assistant.io/docs/blueprint/selectors/) to control
+      # the input UI for this field
+      selector:
+        date:
+    species:
+      required: false
+      name: Species
+      description: Species of the crop
+      example: "Tomato"
+      # Selector (https://www.home-assistant.io/docs/blueprint/selectors/) to control
+      # the input UI for this field
+      selector:
+        text:

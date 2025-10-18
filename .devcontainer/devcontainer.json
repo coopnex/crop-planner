@@ -1,0 +1,73 @@
+{
+    "name": "Crop Planner Dev Container",
+    // "image": "mcr.microsoft.com/devcontainers/python:3.13",
+    "context": "..",
+    "dockerFile": "./Dockerfile.dev",
+    "postCreateCommand": "git config --global --add safe.directory ${containerWorkspaceFolder} && script/setup",
+    "postStartCommand": "script/bootstrap",
+    "containerEnv": {
+        "PYTHONASYNCIODEBUG": "1"
+    },
+    "appPort": [
+        "8123:8123",
+        "5683:5683/udp"
+    ],
+    "forwardPorts": [
+        8123
+    ],
+    "portsAttributes": {
+        "8123": {
+            "label": "Home Assistant",
+            "onAutoForward": "notify"
+        }
+    },
+    "customizations": {
+        "vscode": {
+            "extensions": [
+                "charliermarsh.ruff",
+                "github.vscode-pull-request-github",
+                "ms-python.python",
+                "ms-python.vscode-pylance",
+                "ryanluker.vscode-coverage-gutters",
+                "visualstudioexptteam.vscodeintellicode",
+                "redhat.vscode-yaml",
+                "esbenp.prettier-vscode"
+            ],
+            "settings": {
+                "files.eol": "\n",
+                "editor.tabSize": 4,
+                "editor.formatOnPaste": true,
+                "editor.formatOnSave": true,
+                "editor.formatOnType": false,
+                "files.trimTrailingWhitespace": true,
+                "python.analysis.typeCheckingMode": "basic",
+                "python.analysis.autoImportCompletions": true,
+                "python.experiments.optOutFrom": [
+                    "pythonTestAdapter"
+                ],
+                "python.defaultInterpreterPath": "/home/vscode/.local/ha-venv/bin/python",
+                "python.pythonPath": "/home/vscode/.local/ha-venv/bin/python",
+                "python.terminal.activateEnvInCurrentTerminal": true,
+                "python.testing.pytestArgs": [
+                    "--no-cov"
+                ],
+                "pylint.importStrategy": "fromEnvironment",
+                "terminal.integrated.profiles.linux": {
+                    "zsh": {
+                        "path": "/usr/bin/zsh"
+                    }
+                },
+                "terminal.integrated.defaultProfile.linux": "zsh",
+                "[python]": {
+                    "editor.defaultFormatter": "charliermarsh.ruff"
+                }
+            }
+        }
+    },
+    "remoteUser": "vscode",
+    "features": {
+        "ghcr.io/devcontainers-extra/features/apt-packages:1": {
+            "packages": "ffmpeg,libturbojpeg0,libpcap-dev"
+        }
+    }
+}
