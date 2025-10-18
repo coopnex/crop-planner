@@ -1,33 +1,38 @@
 """This module handles the HA service call interface"""
+
+from datetime import date, datetime
+
 import voluptuous as vol
-
-
-from datetime import datetime, date
-from custom_components.crop_planner.coordinator import CropPlannerCoordinator
-from homeassistant.core import ServiceCall, SupportsResponse, ServiceResponse, callback
-from homeassistant.util import dt
+from homeassistant.const import (
+    ATTR_ENTITY_ID,
+    SERVICE_RELOAD,
+)
+from homeassistant.core import ServiceCall, ServiceResponse, SupportsResponse, callback
 from homeassistant.helpers import config_validation as cv
 from homeassistant.helpers import entity_platform
+from homeassistant.helpers import entity_registry as er
 from homeassistant.helpers.entity_component import EntityComponent
 from homeassistant.helpers.service import async_register_admin_service
-from homeassistant.helpers import entity_registry as er
-from homeassistant.const import (
-    SERVICE_RELOAD,
-    ATTR_ENTITY_ID,
-)
+from homeassistant.util import dt
 
 from .const import (
+    ATTR_NAME,
     ATTR_QUANTITY,
     COMPONENT,
+    COORDINATOR,
     DOMAIN,
-    ATTR_NAME,
+    CROP_PLATFORM,
 )
+from .coordinator import CropPlannerCoordinator
+from .crop import Crop, CropData
+
 
 def _parse_dd_mmm(value: str) -> date | None:
     """Convert a date string in dd mmm format to a date object."""
     if isinstance(value, date):
         return value
     return datetime.strptime(f"{value} {datetime.today().year}", "%d %b %Y").date()
+
 
 RELOAD_SERVICE_SCHEMA = vol.Schema({})
 CREATE_CROP_SCHEMA = vol.Schema(
@@ -37,11 +42,14 @@ CREATE_CROP_SCHEMA = vol.Schema(
     }
 )
 _component = None
+
+
 def register_component_services(
     component: EntityComponent, coordinator: CropPlannerCoordinator
 ) -> None:
     """Register the component"""
     _component = component
+
     @callback
     async def reload_service_handler(call: ServiceCall) -> None:
         """Reload yaml entities."""
@@ -61,17 +69,23 @@ def register_component_services(
     async def create_crop(call: ServiceCall) -> None:
         """Reload schedule."""
         hass = call.hass
-        # crop = Crop(hass, CropData(
-        #     id=call.context.id,
-        #     name=call.data[ATTR_NAME],
-        #     quantity=call.data.get(ATTR_QUANTITY, 1),
-        # ))
-        # hass.data[DOMAIN][crop.unique_id] = crop
-        # _component = hass.data[DOMAIN][COMPONENT]
-        # await _component.async_add_entities([crop])
-        # await hass.config_entries.async_forward_entry_setups(entry, [])
-        # https://developers.home-assistant.io/docs/integration_fetching_data#coordinated-single-api-poll-for-data-for-all-entities
-        # await cropPlanner.async_config_entry_first_refresh()
+        coordinator: CropPlannerCoordinator = hass.data[DOMAIN][COORDINATOR]
+        crop_data = CropData(
+            id=call.context.id,
+            name=call.data[ATTR_NAME],
+            quantity=call.data.get(ATTR_QUANTITY, 1),
+        )
+
+        new_data = {
+            "crops": [
+                *coordinator.config_entry.data.get("crops", []),
+                crop_data.__dict__,
+            ],
+        }
+
+        hass.config_entries.async_update_entry(
+            coordinator.config_entry, data=new_data, unique_id=call.context.id
+        )
 
     async_register_admin_service(
         _component.hass,
@@ -81,27 +95,21 @@ def register_component_services(
         schema=RELOAD_SERVICE_SCHEMA,
     )
 
-
-
-        # erreg = er.async_get(hass)
-        # await erreg.async_update_entity(crop.registry_entry.entity_id, device_id=crop.device_id)
-
-
-    # @callback
-    # async def get_info_service_handler(call: ServiceCall) -> ServiceResponse:
-    #     """Return configuration"""
-    #     # pylint: disable=unused-argument
-    #     data = {}
-    #     data["version"] = "1.0.0"
-    #     data["crops"] = [],
-    #     return data
-
     component.hass.services.async_register(
         DOMAIN,
         "create_crop",
         create_crop,
         CREATE_CROP_SCHEMA,
     )
+
+    @callback
+    async def get_info_service_handler(call: ServiceCall) -> ServiceResponse:
+        """Return configuration"""
+        # pylint: disable=unused-argument
+        data = {}
+        data["version"] = "1.0.0"
+        data["crops"] = []
+        return data
 
     # component.hass.services.async_register(
     #     DOMAIN,

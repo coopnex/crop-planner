@@ -4,12 +4,12 @@ from logging import Logger, getLogger
 
 LOGGER: Logger = getLogger(__package__)
 
-DOMAIN = "crop_planner"
+DOMAIN = "crop"
 CROP_PLANNER = "Crop Planner"
 COORDINATOR = "coordinator"
 COMPONENT = "component"
 ATTRIBUTION = "Data provided by http://jsonplaceholder.typicode.com/"
-
+CROP_PLATFORM = "crop"
 ICON = "mdi:leaf"
 
 CONF_CROPS = "crops"

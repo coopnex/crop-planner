@@ -2,27 +2,31 @@
 
 from __future__ import annotations
 
-from logging import Logger
+from dataclasses import dataclass
 from typing import TYPE_CHECKING, Any
 
-from homeassistant.core import HomeAssistant
-from homeassistant.exceptions import ConfigEntryAuthFailed
-from homeassistant.helpers import (
-    config_validation as cv,
-)
+from homeassistant.config_entries import ConfigEntry
 from homeassistant.helpers import (
     device_registry as dr,
 )
-from homeassistant.helpers import (
-    entity_registry as er,
-)
 from homeassistant.helpers.entity import async_generate_entity_id
-from homeassistant.helpers.update_coordinator import DataUpdateCoordinator, UpdateFailed
+from homeassistant.helpers.update_coordinator import DataUpdateCoordinator
+from homeassistant.loader import Integration
 
-from .const import ATTR_CROP, COMPONENT, COORDINATOR, DOMAIN, LOGGER
+from .const import DOMAIN
 
 if TYPE_CHECKING:
-    from .data import CropPlannerConfigEntry
+    from logging import Logger
+
+    from homeassistant.config_entries import ConfigEntry
+    from homeassistant.core import HomeAssistant
+    from homeassistant.loader import Integration
+
+    from crop_planner.crop import Crop
+
+    from .coordinator import CropPlannerCoordinator
+
+type CropPlannerConfigEntry = ConfigEntry[CropPlannerData]
 
 
 # https://developers.home-assistant.io/docs/integration_fetching_data#coordinated-single-api-poll-for-data-for-all-entities
@@ -31,10 +35,12 @@ class CropPlannerCoordinator(DataUpdateCoordinator):
 
     config_entry: CropPlannerConfigEntry
 
-    def __init__(self, hass: HomeAssistant, config_entry: CropPlannerConfigEntry, logger: Logger) -> None:
+    def __init__(
+        self, hass: HomeAssistant, config_entry: CropPlannerConfigEntry, logger: Logger
+    ) -> None:
         super().__init__(
             hass,
-            logger = logger,
+            logger=logger,
             name="Crop Planner",
             update_interval=None,
         )
@@ -68,7 +74,6 @@ class CropPlannerCoordinator(DataUpdateCoordinator):
             "manufacturer": "Crop Planner",
         }
 
-
     def update_registry(self) -> None:
         """Update registry with correct data."""
         # Is there a better way to add an entity to the device registry?
@@ -90,3 +95,11 @@ class CropPlannerCoordinator(DataUpdateCoordinator):
     async def _async_update_data(self) -> Any:
         """Update data via library."""
 
+
+@dataclass
+class CropPlannerData:
+    """Data for the Blueprint integration."""
+
+    coordinator: CropPlannerCoordinator
+    crops: list[Crop]
+    integration: Integration

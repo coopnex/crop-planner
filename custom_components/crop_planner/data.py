@@ -3,20 +3,25 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
-from typing import TYPE_CHECKING
+from typing import Any
 
-if TYPE_CHECKING:
-    from homeassistant.config_entries import ConfigEntry
-    from homeassistant.loader import Integration
-
-    from .coordinator import CropPlannerCoordinator
+from crop_planner.const import LOGGER
 
 
-type CropPlannerConfigEntry = ConfigEntry[CropPlannerData]
+def create_crop_data(data: Any) -> CropData:
+    """Create a CropData instance from a dictionary."""
+    LOGGER.debug("Creating CropData from data: %s", data)
+    return CropData(
+        id=data["id"],
+        name=data["name"],
+        quantity=1,
+    )
+
 
 @dataclass
-class CropPlannerData:
-    """Data for the Blueprint integration."""
+class CropData:
+    """Define an object to be stored in `entry.runtime_data`."""
 
-    coordinator: CropPlannerCoordinator
-    integration: Integration
+    id: str
+    name: str
+    quantity: int

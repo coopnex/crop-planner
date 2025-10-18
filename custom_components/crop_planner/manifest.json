@@ -1,5 +1,5 @@
 {
-    "domain": "crop_planner",
+    "domain": "crop",
     "name": "Crop Planner",
     "codeowners": [
         "@coopnex"
