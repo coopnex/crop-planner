@@ -29,7 +29,6 @@ if TYPE_CHECKING:
 type CropPlannerConfigEntry = ConfigEntry[CropPlannerData]
 
 
-# https://developers.home-assistant.io/docs/integration_fetching_data#coordinated-single-api-poll-for-data-for-all-entities
 class CropPlannerCoordinator(DataUpdateCoordinator):
     """Class to manage fetching data from the API."""
 
@@ -38,6 +37,7 @@ class CropPlannerCoordinator(DataUpdateCoordinator):
     def __init__(
         self, hass: HomeAssistant, config_entry: CropPlannerConfigEntry, logger: Logger
     ) -> None:
+        """Initialize the CropPlannerCoordinator."""
         super().__init__(
             hass,
             logger=logger,
@@ -49,17 +49,13 @@ class CropPlannerCoordinator(DataUpdateCoordinator):
         self._name = "Crop Planner"
         self._attr_unique_id = self.config_entry.entry_id
         self._config_entries = []
-        self._device_id = self.config_entry.entry_id
+        self._device_id = None
         self.entity_id = async_generate_entity_id(
             f"{DOMAIN}.{{}}", self._name, current_ids={}
         )
 
     @property
-    def unique_id(self) -> str:
-        return self._attr_unique_id
-
-    @property
-    def device_id(self) -> str:
+    def device_id(self) -> str | None:
         """The device ID used for all the entities."""
         return self._device_id
 
@@ -67,7 +63,7 @@ class CropPlannerCoordinator(DataUpdateCoordinator):
     def device_info(self) -> dict:
         """Device info for devices."""
         return {
-            "identifiers": {(DOMAIN, self.unique_id)},
+            "identifiers": {(DOMAIN, self._attr_unique_id)},
             "name": self.name,
             "config_entries": self._config_entries,
             "model": self.name,
@@ -76,21 +72,20 @@ class CropPlannerCoordinator(DataUpdateCoordinator):
 
     def update_registry(self) -> None:
         """Update registry with correct data."""
-        # Is there a better way to add an entity to the device registry?
-
         device_registry = dr.async_get(self._hass)
         device_registry.async_get_or_create(
             config_entry_id=self._config.entry_id,
-            identifiers={(DOMAIN, self.unique_id)},
+            identifiers={(DOMAIN, self._attr_unique_id)},
             name=self.name,
             model="Crop Planner",
             manufacturer="Crop Planner",
         )
         if self._device_id is None:
             device = device_registry.async_get_device(
-                identifiers={(DOMAIN, self.unique_id)}
+                identifiers={(DOMAIN, self._attr_unique_id)}
             )
-            self._device_id = device.id
+            if device is not None:
+                self._device_id = device.id
 
     async def _async_update_data(self) -> Any:
         """Update data via library."""

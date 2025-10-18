@@ -14,7 +14,7 @@ def create_crop_data(data: Any) -> CropData:
     return CropData(
         id=data["id"],
         name=data["name"],
-        quantity=1,
+        quantity=data["quantity"],
     )
 
 

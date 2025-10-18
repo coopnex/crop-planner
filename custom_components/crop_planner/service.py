@@ -1,30 +1,24 @@
-"""This module handles the HA service call interface"""
+"""Service module handles the HA service call interface."""
 
 from datetime import date, datetime
 
 import voluptuous as vol
 from homeassistant.const import (
-    ATTR_ENTITY_ID,
     SERVICE_RELOAD,
 )
-from homeassistant.core import ServiceCall, ServiceResponse, SupportsResponse, callback
+from homeassistant.core import ServiceCall, callback
 from homeassistant.helpers import config_validation as cv
-from homeassistant.helpers import entity_platform
-from homeassistant.helpers import entity_registry as er
 from homeassistant.helpers.entity_component import EntityComponent
 from homeassistant.helpers.service import async_register_admin_service
-from homeassistant.util import dt
 
 from .const import (
     ATTR_NAME,
     ATTR_QUANTITY,
-    COMPONENT,
     COORDINATOR,
     DOMAIN,
-    CROP_PLATFORM,
 )
 from .coordinator import CropPlannerCoordinator
-from .crop import Crop, CropData
+from .crop import CropData
 
 
 def _parse_dd_mmm(value: str) -> date | None:
@@ -47,7 +41,7 @@ _component = None
 def register_component_services(
     component: EntityComponent, coordinator: CropPlannerCoordinator
 ) -> None:
-    """Register the component"""
+    """Register the component."""
     _component = component
 
     @callback
@@ -101,20 +95,3 @@ def register_component_services(
         create_crop,
         CREATE_CROP_SCHEMA,
     )
-
-    @callback
-    async def get_info_service_handler(call: ServiceCall) -> ServiceResponse:
-        """Return configuration"""
-        # pylint: disable=unused-argument
-        data = {}
-        data["version"] = "1.0.0"
-        data["crops"] = []
-        return data
-
-    # component.hass.services.async_register(
-    #     DOMAIN,
-    #     SERVICE_GET_INFO,
-    #     get_info_service_handler,
-    #     {},
-    #     supports_response=SupportsResponse.ONLY,
-    # )
