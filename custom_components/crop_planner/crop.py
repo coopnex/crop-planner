@@ -39,7 +39,7 @@ if TYPE_CHECKING:
 class Crop(Entity):
     """Class to represent a crop."""
 
-    _attr_entity_category = EntityCategory.DIAGNOSTIC
+    _attr_entity_category = EntityCategory.CONFIG
 
     def __init__(self, hass: HomeAssistant, config: CropData) -> None:
         """Initialize a crop with a name, planting date, and harvest date."""
