@@ -8,10 +8,8 @@ quantities, and device/entity registration behavior.
 
 from typing import TYPE_CHECKING
 
-from homeassistant.const import (
-    STATE_OK,
-    EntityCategory,
-)
+from homeassistant.components.sensor import SensorDeviceClass
+from homeassistant.const import STATE_OK, EntityCategory
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers import (
     entity_registry as er,
@@ -40,6 +38,7 @@ class Crop(Entity):
     """Class to represent a crop."""
 
     _attr_entity_category = EntityCategory.CONFIG
+    _attr_device_class = SensorDeviceClass.ENUM
 
     def __init__(self, hass: HomeAssistant, config: CropData) -> None:
         """Initialize a crop with a name, planting date, and harvest date."""
@@ -48,6 +47,11 @@ class Crop(Entity):
         self._name = config.name
         self._quantity = config.quantity
         self._sowing_date = config.sowing_date
+        self._species = config.species
+        if config.image_url is not None:
+            self._attr_entity_picture = config.image_url
+        else:
+            self._attr_entity_picture = "/local/default_crop_image.jpg"
         self._config_entries = []
         self._unique_id = config.id
         self._attr_unique_id = self._unique_id
@@ -69,14 +73,6 @@ class Crop(Entity):
         return self._quantity
 
     @property
-    def unique_id(self) -> str:
-        return self._unique_id
-
-    @property
-    def device_class(self):
-        return DOMAIN
-
-    @property
     def device_id(self) -> str | None:
         """The device ID used for all the entities."""
         return self._device_id
@@ -88,6 +84,7 @@ class Crop(Entity):
             "name": self._name,
             "quantity": self._quantity,
             "sowing_date": self._sowing_date,
+            "species": self._species,
         }
 
     def update(self) -> None:

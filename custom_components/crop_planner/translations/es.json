@@ -37,7 +37,8 @@
       "state_attributes": {
         "name": { "name": "Nombre" },
         "quantity": { "name": "Cantidad" },
-        "sowing_date": { "name": "Fecha de siembra" }
+        "sowing_date": { "name": "Fecha de siembra" },
+        "species": { "name": "Especie" }
       }
     }
   }

@@ -30,3 +30,12 @@ create_crop:
       # the input UI for this field
       selector:
         date:
+    species:
+      required: false
+      name: Species
+      description: Species of the crop
+      example: "Tomato"
+      # Selector (https://www.home-assistant.io/docs/blueprint/selectors/) to control
+      # the input UI for this field
+      selector:
+        text:

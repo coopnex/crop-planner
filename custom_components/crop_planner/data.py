@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
+from email.mime import image
 from typing import TYPE_CHECKING, Any
 
 from crop_planner.const import LOGGER
@@ -18,7 +19,9 @@ def create_crop_data(data: Any) -> CropData:
         id=data["id"],
         name=data["name"],
         quantity=data["quantity"],
+        species=data.get("species", None),
         sowing_date=data["sowing_date"],
+        image_url=data.get("image_url", None),
     )
 
 
@@ -30,3 +33,5 @@ class CropData:
     name: str
     quantity: int
     sowing_date: date
+    species: str | None = None
+    image_url: str | None = None

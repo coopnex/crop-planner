@@ -1,6 +1,12 @@
 {
     "domain": "crop",
     "name": "Crop Planner",
+    "after_dependencies": [
+        "recorder",
+        "openplantbook",
+        "integration",
+        "utility_meter"
+    ],
     "codeowners": [
         "@coopnex"
     ],
