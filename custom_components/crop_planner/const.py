@@ -16,6 +16,7 @@ CONF_CROPS = "crops"
 ATTR_CROP = "crop"
 ATTR_NAME = "name"
 ATTR_QUANTITY = "quantity"
+ATTR_SOWING_DATE = "sowing_date"
 
 # Status
 STATUS_DISABLED = "disabled"

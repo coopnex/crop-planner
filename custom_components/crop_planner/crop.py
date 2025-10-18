@@ -47,6 +47,7 @@ class Crop(Entity):
         self._hass = hass
         self._name = config.name
         self._quantity = config.quantity
+        self._sowing_date = config.sowing_date
         self._config_entries = []
         self._unique_id = config.id
         self._attr_unique_id = self._unique_id
@@ -56,7 +57,6 @@ class Crop(Entity):
         )
         self._attr_icon = ICON
         self._attr_state = STATE_OK
-        self.sowing_date = None
 
     @property
     def name(self) -> str:
@@ -84,7 +84,11 @@ class Crop(Entity):
     @property
     def extra_state_attributes(self) -> dict:
         """Return the device specific state attributes."""
-        return {"name": self._name, "quantity": self._quantity}
+        return {
+            "name": self._name,
+            "quantity": self._quantity,
+            "sowing_date": self._sowing_date,
+        }
 
     def update(self) -> None:
         """Run on every update of the entities."""
@@ -95,11 +99,6 @@ class Crop(Entity):
         """Update registry with correct data."""
         erreg = er.async_get(self._hass)
         erreg.async_update_entity(self.entity_id, device_id=self.device_id)
-
-    @property
-    def options_entities(self) -> list[Entity]:
-        """List all threshold entities."""
-        return []
 
     async def async_added_to_hass(self) -> None:
         self.update_registry()

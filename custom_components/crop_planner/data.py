@@ -3,9 +3,12 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
-from typing import Any
+from typing import TYPE_CHECKING, Any
 
 from crop_planner.const import LOGGER
+
+if TYPE_CHECKING:
+    from datetime import date
 
 
 def create_crop_data(data: Any) -> CropData:
@@ -15,6 +18,7 @@ def create_crop_data(data: Any) -> CropData:
         id=data["id"],
         name=data["name"],
         quantity=data["quantity"],
+        sowing_date=data["sowing_date"],
     )
 
 
@@ -25,3 +29,4 @@ class CropData:
     id: str
     name: str
     quantity: int
+    sowing_date: date

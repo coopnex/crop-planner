@@ -23,7 +23,21 @@
         "quantity": {
           "name": "Cantidad",
           "description": "Número de plantas en el cultivo"
+        },
+        "sowing_date": {
+          "name": "Fecha de siembra",
+          "description": "Fecha en la que se sembró el cultivo",
+          "example": "2024-04-15"
         }
+      }
+    }
+  },
+  "entity_component": {
+    "_": {
+      "state_attributes": {
+        "name": { "name": "Nombre" },
+        "quantity": { "name": "Cantidad" },
+        "sowing_date": { "name": "Fecha de siembra" }
       }
     }
   }

@@ -21,3 +21,12 @@ create_crop:
           max: 50
           mode: box
           unit_of_measurement: plants
+    sowing_date:
+      required: false
+      name: Sowing Date
+      description: Date when the crop was sown
+      example: "2024-04-15"
+      # Selector (https://www.home-assistant.io/docs/blueprint/selectors/) to control
+      # the input UI for this field
+      selector:
+        date:

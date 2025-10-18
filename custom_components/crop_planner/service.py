@@ -1,6 +1,6 @@
 """Service module handles the HA service call interface."""
 
-from datetime import date, datetime
+from datetime import date, datetime, timezone, UTC
 
 import voluptuous as vol
 from homeassistant.const import (
@@ -14,6 +14,7 @@ from homeassistant.helpers.service import async_register_admin_service
 from .const import (
     ATTR_NAME,
     ATTR_QUANTITY,
+    ATTR_SOWING_DATE,
     COORDINATOR,
     DOMAIN,
 )
@@ -33,6 +34,7 @@ CREATE_CROP_SCHEMA = vol.Schema(
     {
         vol.Required(ATTR_NAME): cv.string,
         vol.Optional(ATTR_QUANTITY): cv.positive_int,
+        vol.Optional(ATTR_SOWING_DATE): cv.date,
     }
 )
 _component = None
@@ -66,6 +68,7 @@ def register_component_services(component: EntityComponent) -> None:
             id=call.context.id,
             name=call.data[ATTR_NAME],
             quantity=call.data.get(ATTR_QUANTITY, 1),
+            sowing_date=call.data.get(ATTR_SOWING_DATE, datetime.now(tz=UTC).date),
         )
 
         new_data = {
