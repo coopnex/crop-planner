@@ -1,15 +1,15 @@
 {
     "domain": "crop",
     "name": "Crop Planner",
-    "version": "0.1.2-dev2",
+    "after_dependencies": ["openplantbook"],
     "codeowners": ["@coopnex"],
+    "config_flow": true,
+    "documentation": "https://github.com/coopnex/crop-planner",
+    "dependencies": [],
     "integration_type": "hub",
     "iot_class": "local_polling",
-    "config_flow": true,
-    "single_config_entry": true,
-    "dependencies": [],
-    "after_dependencies": ["openplantbook"],
+    "issue_tracker": "https://github.com/coopnex/crop-planner/issues",
     "requirements": ["async-timeout>=4.0.2"],
-    "documentation": "https://github.com/coopnex/crop-planner",
-    "issue_tracker": "https://github.com/coopnex/crop-planner/issues"
+    "single_config_entry": true,
+    "version": "0.1.2-dev2"
 }

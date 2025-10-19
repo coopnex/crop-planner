@@ -4,6 +4,7 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
+import homeassistant.helpers.config_validation as cv
 from homeassistant.const import Platform
 from homeassistant.helpers import entity_registry as er
 from homeassistant.helpers.discovery import load_platform
@@ -27,6 +28,7 @@ if TYPE_CHECKING:
     from homeassistant.helpers.typing import ConfigType
 
 PLATFORMS: list[Platform] = [Platform.CALENDAR]
+CONFIG_SCHEMA = cv.empty_config_schema(DOMAIN)
 
 
 def setup(hass: HomeAssistant, config: ConfigType) -> bool:
