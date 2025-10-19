@@ -10,5 +10,5 @@
     "issue_tracker": "https://github.com/coopnex/crop-planner/issues",
     "requirements": ["async-timeout>=4.0.2"],
     "single_config_entry": true,
-    "version": "0.1.2-dev2"
+    "version": "0.1.2-dev3"
 }
