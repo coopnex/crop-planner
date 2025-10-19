@@ -11,8 +11,6 @@ from homeassistant.helpers import config_validation as cv
 from homeassistant.helpers.entity_component import EntityComponent
 from homeassistant.helpers.service import async_register_admin_service
 
-from crop.openplantbook import OpenPlantbookHelper
-
 from .const import (
     ATTR_NAME,
     ATTR_QUANTITY,
@@ -24,6 +22,7 @@ from .const import (
 )
 from .coordinator import CropPlannerCoordinator
 from .crop import CropData
+from .openplantbook import OpenPlantbookHelper
 
 
 def _parse_dd_mmm(value: str) -> date | None:
@@ -54,15 +53,10 @@ def register_component_services(component: EntityComponent) -> None:
         """Reload yaml entities."""
         # pylint: disable=unused-argument
         # pylint: disable=import-outside-toplevel
-        # from .binary_sensor import async_reload_platform
 
         conf = await _component.async_prepare_reload(skip_reset=True)
         if conf is None or conf == {}:
             conf = {DOMAIN: {}}
-        # coordinator.load(conf[DOMAIN])
-        # await async_reload_platform(_component, coordinator)
-        # coordinator.timer(dt.utcnow())
-        # coordinator.clock.start()
 
     @callback
     async def create_crop(call: ServiceCall) -> None:

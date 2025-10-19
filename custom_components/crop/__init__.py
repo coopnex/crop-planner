@@ -11,7 +11,11 @@ from homeassistant.helpers.entity_component import EntityComponent
 from homeassistant.loader import async_get_loaded_integration
 
 from .const import COMPONENT, COORDINATOR, CROP_PLATFORM, DOMAIN, LOGGER
-from .coordinator import CropPlannerConfigEntry, CropPlannerCoordinator, CropPlannerData
+from .coordinator import (
+    CropPlannerConfigEntry,
+    CropPlannerCoordinator,
+    CropPlannerData,
+)
 from .crop import Crop
 from .data import create_crop_data
 from .service import register_component_services

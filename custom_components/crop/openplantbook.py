@@ -9,7 +9,7 @@ from homeassistant.components.persistent_notification import (
     create as create_notification,
 )
 
-from crop.const import (
+from .const import (
     ATTR_SPECIES,
     DOMAIN_PLANTBOOK,
     LOGGER,

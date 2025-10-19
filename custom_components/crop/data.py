@@ -6,7 +6,7 @@ from dataclasses import dataclass
 from email.mime import image
 from typing import TYPE_CHECKING, Any
 
-from crop.const import LOGGER
+from .const import LOGGER
 
 if TYPE_CHECKING:
     from datetime import date

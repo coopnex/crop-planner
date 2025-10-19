@@ -16,8 +16,8 @@ from homeassistant.helpers import (
 from homeassistant.helpers.entity import async_generate_entity_id
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
 
-from crop.const import COORDINATOR, DOMAIN
-from custom_components.crop.coordinator import (
+from .const import COORDINATOR, DOMAIN
+from .coordinator import (
     CropPlannerConfigEntry,
     CropPlannerCoordinator,
 )

@@ -31,7 +31,7 @@ from .const import (
 )
 
 if TYPE_CHECKING:
-    from crop.coordinator import CropPlannerCoordinator
+    from .coordinator import CropPlannerCoordinator
 
 
 class Crop(Entity):
