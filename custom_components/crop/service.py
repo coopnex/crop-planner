@@ -11,7 +11,7 @@ from homeassistant.helpers import config_validation as cv
 from homeassistant.helpers.entity_component import EntityComponent
 from homeassistant.helpers.service import async_register_admin_service
 
-from crop_planner.openplantbook import OpenPlantbookHelper
+from crop.openplantbook import OpenPlantbookHelper
 
 from .const import (
     ATTR_NAME,

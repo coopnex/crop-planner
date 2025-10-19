@@ -19,7 +19,7 @@ from homeassistant.helpers.entity import (
     async_generate_entity_id,
 )
 
-from custom_components.crop_planner.data import (
+from custom_components.crop.data import (
     CropData,
 )
 
@@ -31,7 +31,7 @@ from .const import (
 )
 
 if TYPE_CHECKING:
-    from crop_planner.coordinator import CropPlannerCoordinator
+    from crop.coordinator import CropPlannerCoordinator
 
 
 class Crop(Entity):

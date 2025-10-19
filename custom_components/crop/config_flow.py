@@ -18,7 +18,7 @@ class CropPlannerFlowHandler(config_entries.ConfigFlow, domain=DOMAIN):
         """Handle user step."""
         _errors = {}
         if user_input is not None:
-            await self.async_set_unique_id(unique_id=slugify(CROP_PLANNER))
+            await self.async_set_unique_id(unique_id=slugify(DOMAIN))
             self._abort_if_unique_id_configured()
             return self.async_create_entry(
                 title=CROP_PLANNER,
