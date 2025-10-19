@@ -66,7 +66,7 @@ class CropPlannerCoordinator(DataUpdateCoordinator):
             "name": self.name,
             "config_entries": self._config_entries,
             "model": self.name,
-            "manufacturer": "Crop Planner",
+            "manufacturer": "Coopnex",
         }
 
     def update_registry(self) -> None:
@@ -77,7 +77,7 @@ class CropPlannerCoordinator(DataUpdateCoordinator):
             identifiers={(DOMAIN, self._attr_unique_id)},
             name=self.name,
             model="Crop Planner",
-            manufacturer="Crop Planner",
+            manufacturer="Coopnex",
         )
         if self._device_id is None:
             device = device_registry.async_get_device(
