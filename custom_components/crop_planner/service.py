@@ -76,7 +76,7 @@ def register_component_services(component: EntityComponent) -> None:
             sowing_date=call.data.get(
                 ATTR_SOWING_DATE, datetime.now(tz=UTC).date()
             ).isoformat(),
-            species=call.data[ATTR_SPECIES],
+            species=call.data.get(ATTR_SPECIES, None),
         )
         if crop_data.species is not None:
             opb_result = await OpenPlantbookHelper(hass).openplantbook_get(

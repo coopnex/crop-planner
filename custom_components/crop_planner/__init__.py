@@ -10,10 +10,9 @@ from homeassistant.helpers.discovery import load_platform
 from homeassistant.helpers.entity_component import EntityComponent
 from homeassistant.loader import async_get_loaded_integration
 
-from crop_planner.crop import Crop
-
-from .const import COMPONENT, COORDINATOR, DOMAIN, LOGGER
+from .const import COMPONENT, COORDINATOR, CROP_PLATFORM, DOMAIN, LOGGER
 from .coordinator import CropPlannerConfigEntry, CropPlannerCoordinator, CropPlannerData
+from .crop import Crop
 from .data import create_crop_data
 from .service import register_component_services
 
@@ -30,7 +29,7 @@ def setup(hass: HomeAssistant, config: ConfigType) -> bool:
     """Your controller/hub specific code."""
     # Data that you want to share with your platforms
 
-    load_platform(hass, "crop", DOMAIN, {}, config)
+    load_platform(hass, DOMAIN, CROP_PLATFORM, {}, config)
 
     return True
 

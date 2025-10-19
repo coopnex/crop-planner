@@ -22,9 +22,8 @@ if TYPE_CHECKING:
     from homeassistant.core import HomeAssistant
     from homeassistant.loader import Integration
 
-    from crop_planner.crop import Crop
-
     from .coordinator import CropPlannerCoordinator
+    from .crop import Crop
 
 type CropPlannerConfigEntry = ConfigEntry[CropPlannerData]
 
