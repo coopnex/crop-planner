@@ -51,7 +51,7 @@ class Crop(Entity):
         if config.image_url is not None:
             self._attr_entity_picture = config.image_url
         else:
-            self._attr_entity_picture = "/local/crop_planner/default.jpg"
+            self._attr_entity_picture = "/local/crop_planner/default.png"
         self._config_entries = []
         self._unique_id = config.id
         self._attr_unique_id = self._unique_id
