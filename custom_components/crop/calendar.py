@@ -58,9 +58,9 @@ class CropPlannerCalendar(CalendarEntity):
 
     async def async_get_events(
         self,
-        hass: HomeAssistant,
-        start_date: datetime.datetime,
-        end_date: datetime.datetime,
+        hass: HomeAssistant,  # noqa: ARG002
+        start_date: datetime.datetime,  # noqa: ARG002
+        end_date: datetime.datetime,  # noqa: ARG002
     ) -> list[CalendarEvent]:
         """Return calendar events within a datetime range."""
         return []
@@ -71,4 +71,5 @@ class CropPlannerCalendar(CalendarEntity):
         erreg.async_update_entity(self.entity_id, device_id=self._device_id)
 
     async def async_added_to_hass(self) -> None:
+        """Register the entity in the entity registry once added to hass."""
         self.update_registry()

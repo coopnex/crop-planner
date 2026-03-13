@@ -27,6 +27,7 @@ class OpenPlantbookHelper:
     """Helper functions for the plant integration."""
 
     def __init__(self, hass: HomeAssistant) -> None:
+        """Initialize the OpenPlantbookHelper with a HomeAssistant instance."""
         self.hass = hass
 
     @property
@@ -58,7 +59,7 @@ class OpenPlantbookHelper:
         except TimeoutError:
             LOGGER.warning("Openplantbook request timed out")
             return None
-        except Exception as ex:
+        except Exception as ex:  # noqa: BLE001
             LOGGER.warning("Openplantbook does not work, error: %s", ex)
             return None
         if bool(plant_search_result):
@@ -86,7 +87,7 @@ class OpenPlantbookHelper:
                 )
         except TimeoutError:
             LOGGER.warning("Openplantbook request timed out")
-        except Exception as ex:
+        except Exception as ex:  # noqa: BLE001
             LOGGER.warning("Openplantbook does not work, error: %s", ex)
             return None
         if bool(plant_get_result):

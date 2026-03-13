@@ -12,7 +12,9 @@ from custom_components.crop.const import DOMAIN
 @pytest.fixture
 async def setup_integration(hass):
     """Load the Crop Planner integration and return the config entry."""
-    entry = MockConfigEntry(domain=DOMAIN, title="Crop Planner", data={}, unique_id="crop")
+    entry = MockConfigEntry(
+        domain=DOMAIN, title="Crop Planner", data={}, unique_id="crop"
+    )
     entry.add_to_hass(hass)
     assert await async_setup_component(hass, DOMAIN, {})
     await hass.async_block_till_done()

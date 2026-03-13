@@ -9,7 +9,9 @@ from custom_components.crop.const import DOMAIN
 
 async def test_setup_with_no_crops(hass):
     """Integration loads successfully when the config entry has no crops."""
-    entry = MockConfigEntry(domain=DOMAIN, title="Crop Planner", data={}, unique_id="crop")
+    entry = MockConfigEntry(
+        domain=DOMAIN, title="Crop Planner", data={}, unique_id="crop"
+    )
     entry.add_to_hass(hass)
 
     assert await async_setup_component(hass, DOMAIN, {})
@@ -78,7 +80,9 @@ async def test_setup_crop_entity_with_species(hass):
 
 async def test_unload_entry(hass):
     """Config entry can be unloaded cleanly."""
-    entry = MockConfigEntry(domain=DOMAIN, title="Crop Planner", data={}, unique_id="crop")
+    entry = MockConfigEntry(
+        domain=DOMAIN, title="Crop Planner", data={}, unique_id="crop"
+    )
     entry.add_to_hass(hass)
 
     assert await async_setup_component(hass, DOMAIN, {})

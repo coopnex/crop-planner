@@ -98,4 +98,5 @@ class Crop(Entity):
         erreg.async_update_entity(self.entity_id, device_id=self.device_id)
 
     async def async_added_to_hass(self) -> None:
+        """Register the entity in the entity registry once added to hass."""
         self.update_registry()

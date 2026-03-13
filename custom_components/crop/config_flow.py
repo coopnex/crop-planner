@@ -4,10 +4,12 @@ from __future__ import annotations
 
 import uuid
 from datetime import UTC, datetime
+from typing import TYPE_CHECKING, Any
 
 import voluptuous as vol
 from homeassistant import config_entries
-from homeassistant.helpers import config_validation as cv, selector
+from homeassistant.helpers import config_validation as cv
+from homeassistant.helpers import selector
 from slugify import slugify
 
 from .const import (
@@ -21,6 +23,9 @@ from .const import (
     LOGGER,
 )
 from .openplantbook import OpenPlantbookHelper
+
+if TYPE_CHECKING:
+    from homeassistant.data_entry_flow import FlowResult
 
 _CROP_SCHEMA = vol.Schema(
     {
@@ -37,7 +42,9 @@ class CropPlannerFlowHandler(config_entries.ConfigFlow, domain=DOMAIN):
 
     VERSION = 1
 
-    async def async_step_user(self, user_input=None):
+    async def async_step_user(
+        self, user_input: dict[str, Any] | None = None
+    ) -> FlowResult:
         """Handle user step."""
         if user_input is not None:
             await self.async_set_unique_id(unique_id=slugify(DOMAIN))
@@ -50,7 +57,9 @@ class CropPlannerFlowHandler(config_entries.ConfigFlow, domain=DOMAIN):
         )
 
     @staticmethod
-    def async_get_options_flow(config_entry):
+    def async_get_options_flow(
+        config_entry: config_entries.ConfigEntry,  # noqa: ARG004
+    ) -> CropPlannerOptionsFlowHandler:
         """Return the options flow handler."""
         return CropPlannerOptionsFlowHandler()
 
@@ -58,28 +67,34 @@ class CropPlannerFlowHandler(config_entries.ConfigFlow, domain=DOMAIN):
 class CropPlannerOptionsFlowHandler(config_entries.OptionsFlow):
     """Options flow for adding crop entities."""
 
-    async def async_step_init(self, user_input=None):
+    async def async_step_init(
+        self, user_input: dict[str, Any] | None = None  # noqa: ARG002
+    ) -> FlowResult:
         """Show menu: add a crop or finish."""
         return self.async_show_menu(
             step_id="init",
             menu_options=["add_crop", "finish"],
         )
 
-    async def async_step_add_crop(self, user_input=None):
+    async def async_step_add_crop(
+        self, user_input: dict[str, Any] | None = None
+    ) -> FlowResult:
         """Handle adding a new crop."""
-        errors = {}
+        errors: dict[str, str] = {}
         if user_input is not None:
             image_url = None
             species = user_input.get(ATTR_SPECIES) or None
             if species:
                 try:
-                    opb_result = await OpenPlantbookHelper(self.hass).openplantbook_get(
-                        species
-                    )
+                    opb_result = await OpenPlantbookHelper(
+                        self.hass
+                    ).openplantbook_get(species)
                     if opb_result is not None:
                         image_url = opb_result.get("image_url")
                 except Exception:  # noqa: BLE001
-                    LOGGER.warning("OpenPlantbook lookup failed for species: %s", species)
+                    LOGGER.warning(
+                        "OpenPlantbook lookup failed for species: %s", species
+                    )
 
             sowing_date = (
                 user_input.get(ATTR_SOWING_DATE)
@@ -109,6 +124,8 @@ class CropPlannerOptionsFlowHandler(config_entries.OptionsFlow):
             errors=errors,
         )
 
-    async def async_step_finish(self, user_input=None):
+    async def async_step_finish(
+        self, user_input: dict[str, Any] | None = None  # noqa: ARG002
+    ) -> FlowResult:
         """Finish without adding a crop."""
         return self.async_create_entry(title="", data={})

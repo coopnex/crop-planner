@@ -1,6 +1,9 @@
 """Service module handles the HA service call interface."""
 
+from __future__ import annotations
+
 from datetime import UTC, date, datetime
+from typing import TYPE_CHECKING
 
 import voluptuous as vol
 from homeassistant.const import (
@@ -8,7 +11,6 @@ from homeassistant.const import (
 )
 from homeassistant.core import ServiceCall, callback
 from homeassistant.helpers import config_validation as cv
-from homeassistant.helpers.entity_component import EntityComponent
 from homeassistant.helpers.service import async_register_admin_service
 
 from .const import (
@@ -20,16 +22,21 @@ from .const import (
     DOMAIN,
     LOGGER,
 )
-from .coordinator import CropPlannerCoordinator
 from .crop import CropData
 from .openplantbook import OpenPlantbookHelper
+
+if TYPE_CHECKING:
+    from homeassistant.helpers.entity_component import EntityComponent
+
+    from .coordinator import CropPlannerCoordinator
 
 
 def _parse_dd_mmm(value: str) -> date | None:
     """Convert a date string in dd mmm format to a date object."""
     if isinstance(value, date):
         return value
-    return datetime.strptime(f"{value} {datetime.today().year}", "%d %b %Y").date()
+    year = datetime.now(tz=UTC).year
+    return datetime.strptime(f"{value} {year} +0000", "%d %b %Y %z").date()
 
 
 RELOAD_SERVICE_SCHEMA = vol.Schema({})
@@ -49,11 +56,8 @@ def register_component_services(component: EntityComponent) -> None:
     _component = component
 
     @callback
-    async def reload_service_handler(call: ServiceCall) -> None:
+    async def reload_service_handler(call: ServiceCall) -> None:  # noqa: ARG001
         """Reload yaml entities."""
-        # pylint: disable=unused-argument
-        # pylint: disable=import-outside-toplevel
-
         conf = await _component.async_prepare_reload(skip_reset=True)
         if conf is None or conf == {}:
             conf = {DOMAIN: {}}

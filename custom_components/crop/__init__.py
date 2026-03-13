@@ -40,7 +40,7 @@ def setup(hass: HomeAssistant, config: ConfigType) -> bool:
     return True
 
 
-async def async_setup(hass: HomeAssistant, config: Config) -> bool:
+async def async_setup(hass: HomeAssistant, config: Config) -> bool:  # noqa: ARG001
     """Set up this integration using YAML."""
     hass.data[DOMAIN] = {}
     hass.data.setdefault(DOMAIN, {})
