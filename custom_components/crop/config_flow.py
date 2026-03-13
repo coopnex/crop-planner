@@ -68,7 +68,8 @@ class CropPlannerOptionsFlowHandler(config_entries.OptionsFlow):
     """Options flow for adding crop entities."""
 
     async def async_step_init(
-        self, user_input: dict[str, Any] | None = None  # noqa: ARG002
+        self,
+        user_input: dict[str, Any] | None = None,  # noqa: ARG002
     ) -> FlowResult:
         """Show menu: add a crop or finish."""
         return self.async_show_menu(
@@ -86,9 +87,9 @@ class CropPlannerOptionsFlowHandler(config_entries.OptionsFlow):
             species = user_input.get(ATTR_SPECIES) or None
             if species:
                 try:
-                    opb_result = await OpenPlantbookHelper(
-                        self.hass
-                    ).openplantbook_get(species)
+                    opb_result = await OpenPlantbookHelper(self.hass).openplantbook_get(
+                        species
+                    )
                     if opb_result is not None:
                         image_url = opb_result.get("image_url")
                 except Exception:  # noqa: BLE001
@@ -125,7 +126,8 @@ class CropPlannerOptionsFlowHandler(config_entries.OptionsFlow):
         )
 
     async def async_step_finish(
-        self, user_input: dict[str, Any] | None = None  # noqa: ARG002
+        self,
+        user_input: dict[str, Any] | None = None,  # noqa: ARG002
     ) -> FlowResult:
         """Finish without adding a crop."""
         return self.async_create_entry(title="", data={})
