@@ -12,7 +12,7 @@ async def test_user_step_shows_form(hass, mock_setup_entry):
     )
     assert result["type"] is FlowResultType.FORM
     assert result["step_id"] == "user"
-    assert result["errors"] == {}
+    assert not result["errors"]
 
 
 async def test_user_step_creates_entry(hass, mock_setup_entry):
