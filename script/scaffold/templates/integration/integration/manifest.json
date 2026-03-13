@@ -1,11 +1,14 @@
 {
-  "domain": "integration",
+  "domain": "NEW_DOMAIN",
   "name": "NEW_NAME",
   "codeowners": [],
   "config_flow": false,
   "dependencies": [],
-  "documentation": "https://github.com/coopnex/crop-planner",
-  "iot_class": "local_polling",
+  "documentation": "https://www.home-assistant.io/integrations/NEW_DOMAIN",
+  "homekit": {},
+  "iot_class": "IOT_CLASS",
+  "quality_scale": "bronze",
   "requirements": [],
-  "version": "0.0.0"
+  "ssdp": [],
+  "zeroconf": []
 }
