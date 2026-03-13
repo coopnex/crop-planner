@@ -24,6 +24,11 @@ classifiers = [
 requires-python = ">=3.13.2"
 dependencies = []
 
+[tool.pytest.ini_options]
+asyncio_mode = "auto"
+pythonpath = ["."]
+testpaths = ["tests"]
+
 [tool.setuptools.packages.find]
 where = ["custom_components"]  # list of folders that contain the packages (["."] by default)
 include = ["*"]  # package names should match these glob patterns (["*"] by default)
