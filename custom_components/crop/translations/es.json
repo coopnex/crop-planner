@@ -34,7 +34,7 @@
                 "title": "Opciones del Planificador de Cultivos",
                 "menu_options": {
                     "add_crop": "Añadir un nuevo cultivo",
-                    "remove_crop": "Eliminar un cultivo",
+                    "remove_crops": "Eliminar cultivos",
                     "clear_todos": "Borrar todas las tareas",
                     "finish": "Hecho"
                 }
@@ -56,11 +56,11 @@
                     "refine_search": "Refinar búsqueda"
                 }
             },
-            "remove_crop": {
-                "title": "Eliminar Cultivo",
-                "description": "Selecciona el cultivo que deseas eliminar.",
+            "remove_crops": {
+                "title": "Eliminar Cultivos",
+                "description": "Selecciona uno o más cultivos a eliminar.",
                 "data": {
-                    "crop_id": "Cultivo"
+                    "crop_ids": "Cultivos"
                 }
             },
             "phases": {

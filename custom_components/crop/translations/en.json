@@ -34,7 +34,7 @@
                 "title": "Crop Planner Options",
                 "menu_options": {
                     "add_crop": "Add a new crop",
-                    "remove_crop": "Remove a crop",
+                    "remove_crops": "Remove crops",
                     "clear_todos": "Clear all chores",
                     "finish": "Done"
                 }
@@ -57,11 +57,11 @@
                     "refine_search": "Refine search"
                 }
             },
-            "remove_crop": {
-                "title": "Remove Crop",
-                "description": "Select the crop to remove.",
+            "remove_crops": {
+                "title": "Remove Crops",
+                "description": "Select one or more crops to remove.",
                 "data": {
-                    "crop_id": "Crop"
+                    "crop_ids": "Crops"
                 }
             },
             "phases": {

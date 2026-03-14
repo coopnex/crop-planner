@@ -109,18 +109,18 @@ class CropPlannerOptionsFlowHandler(config_entries.OptionsFlow):
         """Show menu: add a crop, remove a crop, or finish."""
         return self.async_show_menu(
             step_id="init",
-            menu_options=["add_crop", "remove_crop", "clear_todos", "finish"],
+            menu_options=["add_crop", "remove_crops", "clear_todos", "finish"],
         )
 
-    async def async_step_remove_crop(
+    async def async_step_remove_crops(
         self, user_input: dict[str, Any] | None = None
     ) -> FlowResult:
-        """Let the user pick a crop to delete."""
+        """Let the user pick one or more crops to delete."""
         existing_crops: list[dict] = list(self.config_entry.data.get(CONF_CROPS, []))
 
         if user_input is not None:
-            crop_id = user_input.get("crop_id")
-            updated_crops = [c for c in existing_crops if c["id"] != crop_id]
+            ids_to_remove = set(user_input.get("crop_ids", []))
+            updated_crops = [c for c in existing_crops if c["id"] not in ids_to_remove]
             self.hass.config_entries.async_update_entry(
                 self.config_entry,
                 data={**self.config_entry.data, CONF_CROPS: updated_crops},
@@ -133,11 +133,11 @@ class CropPlannerOptionsFlowHandler(config_entries.OptionsFlow):
             for c in existing_crops
         ]
         return self.async_show_form(
-            step_id="remove_crop",
+            step_id="remove_crops",
             data_schema=vol.Schema(
                 {
-                    vol.Required("crop_id"): selector.SelectSelector(
-                        selector.SelectSelectorConfig(options=options)
+                    vol.Required("crop_ids"): selector.SelectSelector(
+                        selector.SelectSelectorConfig(options=options, multiple=True)
                     ),
                 }
             ),
