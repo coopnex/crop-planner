@@ -7,7 +7,7 @@ __pycache__
 .idea/
 .venv/
 .claude/
-
+.local/
 
 # misc
 .coverage

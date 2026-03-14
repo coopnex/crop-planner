@@ -18,12 +18,19 @@
             },
             "add_crop": {
                 "title": "Add Crop",
-                "description": "Add a new crop entity to the planner.",
+                "description": "Add a new crop entity to the planner. Enter a species name to search OpenPlantbook.",
                 "data": {
                     "name": "Crop name",
                     "quantity": "Quantity",
                     "sowing_date": "Sowing date",
-                    "species": "Species (optional, used for OpenPlantbook lookup)"
+                    "species": "Species search (optional)"
+                }
+            },
+            "select_species": {
+                "title": "Select Species",
+                "description": "Choose the species for **{name}** from the OpenPlantbook results.",
+                "data": {
+                    "species": "Species"
                 }
             },
             "finish": {

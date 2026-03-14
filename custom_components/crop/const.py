@@ -28,9 +28,7 @@ STATUS_PAUSED = "paused"
 STATUS_DELAY = "delay"
 
 # OpenPlantBook constants
-DOMAIN_PLANTBOOK = "openplantbook"
-OPB_GET = "get"
-OPB_SEARCH = "search"
-OPB_SEARCH_RESULT = "search_result"
+CONF_CLIENT_ID = "client_id"
+CONF_CLIENT_SECRET = "client_secret"
 OPB_PID = "pid"
 OPB_DISPLAY_PID = "display_pid"

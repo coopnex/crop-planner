@@ -17,15 +17,21 @@ from .const import (
     ATTR_QUANTITY,
     ATTR_SOWING_DATE,
     ATTR_SPECIES,
+    CONF_CLIENT_ID,
+    CONF_CLIENT_SECRET,
     CONF_CROPS,
     CROP_PLANNER,
     DOMAIN,
     LOGGER,
+    OPB_DISPLAY_PID,
+    OPB_PID,
 )
 from .openplantbook import OpenPlantbookHelper
 
 if TYPE_CHECKING:
     from homeassistant.data_entry_flow import FlowResult
+
+_NO_SPECIES = "__none__"
 
 _CROP_SCHEMA = vol.Schema(
     {
@@ -49,11 +55,23 @@ class CropPlannerFlowHandler(config_entries.ConfigFlow, domain=DOMAIN):
         if user_input is not None:
             await self.async_set_unique_id(unique_id=slugify(DOMAIN))
             self._abort_if_unique_id_configured()
-            return self.async_create_entry(title=CROP_PLANNER, data={CONF_CROPS: []})
+            return self.async_create_entry(
+                title=CROP_PLANNER,
+                data={
+                    CONF_CROPS: [],
+                    CONF_CLIENT_ID: user_input.get(CONF_CLIENT_ID, ""),
+                    CONF_CLIENT_SECRET: user_input.get(CONF_CLIENT_SECRET, ""),
+                },
+            )
 
         return self.async_show_form(
             step_id="user",
-            data_schema=vol.Schema({}),
+            data_schema=vol.Schema(
+                {
+                    vol.Optional(CONF_CLIENT_ID, default=""): cv.string,
+                    vol.Optional(CONF_CLIENT_SECRET, default=""): cv.string,
+                }
+            ),
         )
 
     @staticmethod
@@ -66,6 +84,11 @@ class CropPlannerFlowHandler(config_entries.ConfigFlow, domain=DOMAIN):
 
 class CropPlannerOptionsFlowHandler(config_entries.OptionsFlow):
     """Options flow for adding crop entities."""
+
+    def __init__(self) -> None:
+        """Initialize the options flow."""
+        self._crop_base: dict[str, Any] = {}
+        self._species_options: list[selector.SelectOptionDict] = []
 
     async def async_step_init(
         self,
@@ -80,50 +103,110 @@ class CropPlannerOptionsFlowHandler(config_entries.OptionsFlow):
     async def async_step_add_crop(
         self, user_input: dict[str, Any] | None = None
     ) -> FlowResult:
-        """Handle adding a new crop."""
-        errors: dict[str, str] = {}
+        """Show the crop form; proceed to species selection if a hint is given."""
         if user_input is not None:
-            image_url = None
-            species = user_input.get(ATTR_SPECIES) or None
-            if species:
-                try:
-                    opb_result = await OpenPlantbookHelper(self.hass).openplantbook_get(
-                        species
-                    )
-                    if opb_result is not None:
-                        image_url = opb_result.get("image_url")
-                except Exception:  # noqa: BLE001
-                    LOGGER.warning(
-                        "OpenPlantbook lookup failed for species: %s", species
-                    )
-
-            sowing_date = (
-                user_input.get(ATTR_SOWING_DATE)
-                or datetime.now(tz=UTC).date().isoformat()
-            )
-            new_crop = {
-                "id": str(uuid.uuid4()),
+            self._crop_base = {
                 ATTR_NAME: user_input[ATTR_NAME],
                 ATTR_QUANTITY: user_input.get(ATTR_QUANTITY, 1),
-                ATTR_SOWING_DATE: sowing_date,
-                ATTR_SPECIES: species,
-                "image_url": image_url,
+                ATTR_SOWING_DATE: (
+                    user_input.get(ATTR_SOWING_DATE)
+                    or datetime.now(tz=UTC).date().isoformat()
+                ),
             }
-
-            existing_crops = list(self.config_entry.data.get(CONF_CROPS, []))
-            existing_crops.append(new_crop)
-            self.hass.config_entries.async_update_entry(
-                self.config_entry,
-                data={**self.config_entry.data, CONF_CROPS: existing_crops},
-            )
-            await self.hass.config_entries.async_reload(self.config_entry.entry_id)
-            return self.async_create_entry(title="", data={})
+            species_hint = user_input.get(ATTR_SPECIES, user_input[ATTR_NAME]).strip()
+            if species_hint:
+                return await self._search_species(species_hint)
+            return await self._save_crop(species=None, image_url=None)
 
         return self.async_show_form(
             step_id="add_crop",
             data_schema=_CROP_SCHEMA,
-            errors=errors,
+            errors={},
         )
+
+    def _opb_helper(self) -> OpenPlantbookHelper | None:
+        """Return an OpenPlantbookHelper if credentials are configured."""
+        client_id = self.config_entry.data.get(CONF_CLIENT_ID, "")
+        secret = self.config_entry.data.get(CONF_CLIENT_SECRET, "")
+        if client_id and secret:
+            return OpenPlantbookHelper(client_id, secret)
+        return None
+
+    async def _search_species(self, hint: str) -> FlowResult:
+        """Query OpenPlantbook and move to the selection step."""
+        options: list[selector.SelectOptionDict] = [
+            selector.SelectOptionDict(value=_NO_SPECIES, label="— None —")
+        ]
+        helper = self._opb_helper()
+        if helper:
+            try:
+                result = await helper.openplantbook_search(hint)
+                if result:
+                    for plant in result.get("results", []):
+                        pid = plant.get(OPB_PID, "")
+                        label = plant.get(OPB_DISPLAY_PID, pid)
+                        if pid:
+                            options.append(
+                                selector.SelectOptionDict(value=pid, label=label)
+                            )
+            except Exception:  # noqa: BLE001
+                LOGGER.warning("OpenPlantbook search failed for hint: %s", hint)
+
+        self._species_options = options
+        return await self.async_step_select_species()
+
+    async def async_step_select_species(
+        self, user_input: dict[str, Any] | None = None
+    ) -> FlowResult:
+        """Let the user pick a species from OpenPlantbook search results."""
+        if user_input is not None:
+            pid = user_input.get(ATTR_SPECIES)
+            if pid and pid != _NO_SPECIES:
+                image_url: str | None = None
+                helper = self._opb_helper()
+                if helper:
+                    try:
+                        opb_result = await helper.openplantbook_get(pid)
+                        if opb_result is not None:
+                            image_url = opb_result.get("image_url")
+                    except Exception:  # noqa: BLE001
+                        LOGGER.warning("OpenPlantbook get failed for pid: %s", pid)
+                return await self._save_crop(species=pid, image_url=image_url)
+            return await self._save_crop(species=None, image_url=None)
+
+        schema = vol.Schema(
+            {
+                vol.Required(ATTR_SPECIES, default=_NO_SPECIES): (
+                    selector.SelectSelector(
+                        selector.SelectSelectorConfig(options=self._species_options)
+                    )
+                ),
+            }
+        )
+        return self.async_show_form(
+            step_id="select_species",
+            data_schema=schema,
+            description_placeholders={"name": self._crop_base.get(ATTR_NAME, "")},
+        )
+
+    async def _save_crop(
+        self, species: str | None, image_url: str | None
+    ) -> FlowResult:
+        """Persist the new crop to the config entry and reload."""
+        new_crop = {
+            "id": str(uuid.uuid4()),
+            **self._crop_base,
+            ATTR_SPECIES: species,
+            "image_url": image_url,
+        }
+        existing_crops = list(self.config_entry.data.get(CONF_CROPS, []))
+        existing_crops.append(new_crop)
+        self.hass.config_entries.async_update_entry(
+            self.config_entry,
+            data={**self.config_entry.data, CONF_CROPS: existing_crops},
+        )
+        await self.hass.config_entries.async_reload(self.config_entry.entry_id)
+        return self.async_create_entry(title="", data={})
 
     async def async_step_finish(
         self,
