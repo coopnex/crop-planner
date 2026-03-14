@@ -22,6 +22,7 @@ from .coordinator import (
     CropPlannerCoordinator,
 )
 from .data import create_crop_data
+from .todo import CONF_TODOS
 
 
 async def async_setup_entry(
@@ -92,6 +93,27 @@ class CropPlannerCalendar(CalendarEntity):
                         summary=summary,
                     )
                 )
+
+        for todo in self._entry.data.get(CONF_TODOS, []):
+            if todo.get("status") == "completed":
+                continue
+            due_str = todo.get("due")
+            if not due_str:
+                continue
+            try:
+                due = datetime.date.fromisoformat(due_str)
+            except ValueError:
+                continue
+            if not (window_start <= due <= window_end):
+                continue
+            events.append(
+                CalendarEvent(
+                    start=due,
+                    end=due + datetime.timedelta(days=1),
+                    summary=f"☑ {todo.get('summary', '')}",
+                    description=todo.get("description"),
+                )
+            )
 
         return events
 
