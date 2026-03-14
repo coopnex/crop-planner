@@ -20,17 +20,17 @@
     "entity": {
         "ai_task": {
             "generate_chores": {
-                "name": "Generar tareas de cultivo"
+                "name": "Sugerir tareas de cultivo"
             }
         },
         "button": {
             "generate_chores": {
-                "name": "Generar tareas de cultivo"
+                "name": "Sugerir tareas"
             }
         },
         "todo": {
             "crop_chores": {
-                "name": "Tareas de cultivo"
+                "name": "Tareas del huerto"
             }
         },
         "calendar": {

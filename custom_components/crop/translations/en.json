@@ -20,12 +20,12 @@
     "entity": {
         "ai_task": {
             "generate_chores": {
-                "name": "Generate crop chores"
+                "name": "Suggest crop chores"
             }
         },
         "button": {
             "generate_chores": {
-                "name": "Generate crop chores"
+                "name": "Suggest chores"
             }
         },
         "todo": {
