@@ -13,6 +13,7 @@ CROP_PLATFORM = "crop"
 ICON = "mdi:sprout"
 
 CONF_CROPS = "crops"
+CONF_TODOS = "todos"
 ATTR_CROP = "crop"
 ATTR_NAME = "name"
 ATTR_QUANTITY = "quantity"

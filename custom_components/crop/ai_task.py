@@ -38,7 +38,8 @@ _DEFAULT_INSTRUCTIONS = (
     "harvesting based on general knowledge. "
     "Generate task summaries and descriptions in the user's language. "
     "Propose also new recommended crops according to the current time of the year. "
-    "Return between 5 to 10 of the most important tasks."
+    "Check existing tasks to avoid repetitions."
+    "Return up to new 10 suggested tasks each time."
 )
 
 _SUGGESTION_SCHEMA = vol.Schema(
@@ -58,7 +59,7 @@ _SUGGESTION_SCHEMA = vol.Schema(
 )
 
 
-def _build_crop_context(hass: HomeAssistant, crops: list[dict[str, Any]]) -> str:
+def _build_crop_context(hass: HomeAssistant, crops: list[dict[str, Any]], todos: list[dict[str, Any]]) -> str:
     """Serialise current crop state into a human-readable block for the LLM."""
     today = datetime.now(tz=UTC).date().isoformat()
     language = hass.config.language
@@ -90,6 +91,14 @@ def _build_crop_context(hass: HomeAssistant, crops: list[dict[str, Any]]) -> str
         lines.append(
             f"  - {name} ({species}), qty {qty}{entity_str}; phases: {phase_str}"
         )
+    lines.append("* Current todos:")
+    for todo in todos:
+        summary = todo.get("summary")
+        description = f"({todo.get("description") or ""})"
+        lines.append(
+            f"  - {summary} {description}"
+        )
+
     return "\n".join(lines)
 
 
@@ -148,6 +157,7 @@ class GenerateChoresAITask(AITaskEntity):
     ) -> GenDataTaskResult:
         """Enrich the task with crop context, delegate to an LLM, and add todos."""
         crops: list[dict] = list(self._entry.data.get(CONF_CROPS, []))
+        todos: list[dict] = list(self._entry.data.get(CONF_TODOS, []))
         if not crops:
             msg = "No crops are configured in the Crop Planner — nothing to suggest."
             raise HomeAssistantError(msg)
@@ -160,7 +170,7 @@ class GenerateChoresAITask(AITaskEntity):
             )
             raise HomeAssistantError(msg)
         LOGGER.debug("self._hass= %s", self._hass)
-        crop_context = _build_crop_context(self._hass, crops)
+        crop_context = _build_crop_context(self._hass, crops, todos)
         instructions = f"{_DEFAULT_INSTRUCTIONS}\n\nContext:\n{crop_context}"
 
         LOGGER.debug("Delegating crop chore generation to %s", delegate_entity_id)

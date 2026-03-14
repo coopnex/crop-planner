@@ -16,7 +16,7 @@ from homeassistant.const import Platform
 from homeassistant.helpers import entity_registry as er
 from homeassistant.helpers.entity import async_generate_entity_id
 
-from .const import COORDINATOR, DOMAIN, LOGGER
+from .const import COORDINATOR, DOMAIN, LOGGER, CONF_TODOS
 
 if TYPE_CHECKING:
     from homeassistant.core import HomeAssistant
@@ -24,7 +24,6 @@ if TYPE_CHECKING:
 
     from .coordinator import CropPlannerConfigEntry, CropPlannerCoordinator
 
-CONF_TODOS = "todos"
 
 
 async def async_setup_entry(
