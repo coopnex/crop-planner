@@ -10,7 +10,7 @@ COORDINATOR = "coordinator"
 COMPONENT = "component"
 ATTRIBUTION = "Data provided by http://jsonplaceholder.typicode.com/"
 CROP_PLATFORM = "crop"
-ICON = "mdi:leaf"
+ICON = "mdi:sprout"
 
 CONF_CROPS = "crops"
 ATTR_CROP = "crop"

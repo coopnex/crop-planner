@@ -5,6 +5,7 @@ from __future__ import annotations
 import uuid
 from datetime import UTC, datetime
 from typing import TYPE_CHECKING, Any
+from urllib.parse import quote
 
 import voluptuous as vol
 from homeassistant import config_entries
@@ -89,6 +90,7 @@ class CropPlannerOptionsFlowHandler(config_entries.OptionsFlow):
         """Initialize the options flow."""
         self._crop_base: dict[str, Any] = {}
         self._species_options: list[selector.SelectOptionDict] = []
+        self._last_search_hint: str = ""
 
     async def async_step_init(
         self,
@@ -134,6 +136,7 @@ class CropPlannerOptionsFlowHandler(config_entries.OptionsFlow):
 
     async def _search_species(self, hint: str) -> FlowResult:
         """Query OpenPlantbook and move to the selection step."""
+        self._last_search_hint = hint
         options: list[selector.SelectOptionDict] = [
             selector.SelectOptionDict(value=_NO_SPECIES, label="— None —")
         ]
@@ -145,6 +148,7 @@ class CropPlannerOptionsFlowHandler(config_entries.OptionsFlow):
                     for plant in result.get("results", []):
                         pid = plant.get(OPB_PID, "")
                         label = plant.get(OPB_DISPLAY_PID, pid)
+                        LOGGER.debug("Fetched data: %s", plant)
                         if pid:
                             options.append(
                                 selector.SelectOptionDict(value=pid, label=label)
@@ -188,10 +192,17 @@ class CropPlannerOptionsFlowHandler(config_entries.OptionsFlow):
                 vol.Optional("refine_search"): selector.TextSelector(),
             }
         )
+        opb_url = (
+            "https://open.plantbook.io/browse-db/"
+            f"?contain={quote(self._last_search_hint)}&scope=public"
+        )
         return self.async_show_form(
             step_id="select_species",
             data_schema=schema,
-            description_placeholders={"name": self._crop_base.get(ATTR_NAME, "")},
+            description_placeholders={
+                "name": self._crop_base.get(ATTR_NAME, ""),
+                "opb_url": opb_url,
+            },
         )
 
     async def _save_crop(
