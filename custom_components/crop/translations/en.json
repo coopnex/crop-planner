@@ -50,14 +50,10 @@
                 "title": "Lifecycle Phases",
                 "description": "Set the expected date ranges for each growth phase of **{name}**. All fields are optional.",
                 "data": {
-                    "sowing_start": "Sowing — start",
-                    "sowing_end": "Sowing — end",
-                    "germination_start": "Germination — start",
-                    "germination_end": "Germination — end",
-                    "flowering_start": "Flowering — start",
-                    "flowering_end": "Flowering — end",
-                    "harvest_start": "Harvest — start",
-                    "harvest_end": "Harvest — end"
+                    "sowing": "Sowing",
+                    "germination": "Germination",
+                    "flowering": "Flowering",
+                    "harvest": "Harvest"
                 }
             },
             "finish": {

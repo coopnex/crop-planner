@@ -50,8 +50,7 @@ def _phases_schema() -> vol.Schema:
     """Build a schema with optional start/end DateSelector for each phase."""
     fields: dict[vol.Optional, Any] = {}
     for phase in CROP_PHASES:
-        fields[vol.Optional(f"{phase}_start")] = selector.DateSelector()
-        fields[vol.Optional(f"{phase}_end")] = selector.DateSelector()
+        fields[vol.Optional(f"{phase}")] = selector.DateSelector()
     return vol.Schema(fields)
 
 
@@ -257,12 +256,11 @@ class CropPlannerOptionsFlowHandler(config_entries.OptionsFlow):
         if user_input is not None:
             phases: dict[str, dict[str, str | None]] = {}
             for phase in CROP_PHASES:
-                start = user_input.get(f"{phase}_start") or None
+                start = user_input.get(f"{phase}") or None
                 if(phase == PHASE_SOWING and start == None):
                     start = datetime.now(tz=UTC).date().isoformat()
-                end = user_input.get(f"{phase}_end") or None
-                if start or end:
-                    phases[phase] = {"start": start, "end": end}
+                if start:
+                    phases[phase] = {"start": start}
             return await self._save_crop(phases=phases)
 
         return self.async_show_form(
