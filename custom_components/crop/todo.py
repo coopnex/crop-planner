@@ -16,7 +16,7 @@ from homeassistant.const import Platform
 from homeassistant.helpers import entity_registry as er
 from homeassistant.helpers.entity import async_generate_entity_id
 
-from .const import CHORE_CATEGORY_ICONS, CONF_TODOS, COORDINATOR, DOMAIN, LOGGER
+from .const import CONF_TODOS, COORDINATOR, DOMAIN, LOGGER
 
 if TYPE_CHECKING:
     from homeassistant.core import HomeAssistant
