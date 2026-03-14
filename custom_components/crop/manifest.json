@@ -16,5 +16,5 @@
     "issue_tracker": "https://github.com/coopnex/crop-planner/issues",
     "requirements": ["async-timeout==4.0.3", "openplantbook-sdk==0.6.1"],
     "single_config_entry": true,
-    "version": "0.2.0"
+    "version": "0.2.2"
 }
