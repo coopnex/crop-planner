@@ -1,6 +1,6 @@
 """Tests for the create_crop service."""
 
-from unittest.mock import patch
+from unittest.mock import AsyncMock, patch
 
 import pytest
 from homeassistant.setup import async_setup_component
@@ -26,7 +26,7 @@ async def test_create_crop_persists_in_config_entry(hass, setup_integration):
     await hass.services.async_call(
         DOMAIN,
         "create_crop",
-        {"name": "Basil", "quantity": 2, "sowing_date": "2024-05-01"},
+        {"name": "Basil", "quantity": 2},
         blocking=True,
     )
     await hass.async_block_till_done()
@@ -54,9 +54,11 @@ async def test_create_crop_without_species_skips_openplantbook(hass, setup_integ
 async def test_create_crop_with_species_sets_image_url(hass, setup_integration):
     """image_url is stored on the crop when OpenPlantbook returns data."""
     opb_response = {"image_url": "https://example.com/tomato.jpg"}
+    mock_helper = AsyncMock()
+    mock_helper.openplantbook_get = AsyncMock(return_value=opb_response)
     with patch(
-        "custom_components.crop.service.OpenPlantbookHelper.openplantbook_get",
-        return_value=opb_response,
+        "custom_components.crop.service.OpenPlantbookHelper",
+        return_value=mock_helper,
     ):
         await hass.services.async_call(
             DOMAIN,
@@ -73,9 +75,11 @@ async def test_create_crop_with_species_sets_image_url(hass, setup_integration):
 
 async def test_create_crop_with_unavailable_openplantbook(hass, setup_integration):
     """Crop is still created when OpenPlantbook returns None (unavailable/not found)."""
+    mock_helper = AsyncMock()
+    mock_helper.openplantbook_get = AsyncMock(return_value=None)
     with patch(
-        "custom_components.crop.service.OpenPlantbookHelper.openplantbook_get",
-        return_value=None,
+        "custom_components.crop.service.OpenPlantbookHelper",
+        return_value=mock_helper,
     ):
         await hass.services.async_call(
             DOMAIN,
