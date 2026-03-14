@@ -18,4 +18,4 @@ homeassistant:
 logger:
   default: info
   logs:
-    custom_components.crop_planner: debug
+    custom_components.crop: debug
