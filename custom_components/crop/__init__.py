@@ -6,12 +6,13 @@ from typing import TYPE_CHECKING
 
 import homeassistant.helpers.config_validation as cv
 from homeassistant.const import Platform
+from homeassistant.core import Event, callback
 from homeassistant.helpers import entity_registry as er
 from homeassistant.helpers.discovery import load_platform
 from homeassistant.helpers.entity_component import EntityComponent
 from homeassistant.loader import async_get_loaded_integration
 
-from .const import COMPONENT, COORDINATOR, CROP_PLATFORM, DOMAIN, LOGGER
+from .const import COMPONENT, CONF_CROPS, COORDINATOR, CROP_PLATFORM, DOMAIN, LOGGER
 from .coordinator import (
     CropPlannerConfigEntry,
     CropPlannerCoordinator,

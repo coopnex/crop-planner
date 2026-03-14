@@ -17,6 +17,7 @@
                 "title": "Crop Planner Options",
                 "menu_options": {
                     "add_crop": "Add a new crop",
+                    "remove_crop": "Remove a crop",
                     "finish": "Done"
                 }
             },
@@ -36,6 +37,13 @@
                 "data": {
                     "species": "Species",
                     "refine_search": "Refine search"
+                }
+            },
+            "remove_crop": {
+                "title": "Remove Crop",
+                "description": "Select the crop to remove.",
+                "data": {
+                    "crop_id": "Crop"
                 }
             },
             "phases": {

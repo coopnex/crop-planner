@@ -22,6 +22,7 @@ from .const import (
     CONF_CLIENT_SECRET,
     CONF_CROPS,
     CROP_PHASES,
+    PHASE_SOWING,
     CROP_PLANNER,
     DOMAIN,
     LOGGER,
@@ -40,7 +41,6 @@ _CROP_SCHEMA = vol.Schema(
     {
         vol.Required(ATTR_NAME): cv.string,
         vol.Optional(ATTR_QUANTITY, default=1): cv.positive_int,
-        vol.Optional(ATTR_SOWING_DATE): selector.DateSelector(),
         vol.Optional(ATTR_SPECIES): cv.string,
     }
 )
@@ -109,10 +109,41 @@ class CropPlannerOptionsFlowHandler(config_entries.OptionsFlow):
         self,
         user_input: dict[str, Any] | None = None,  # noqa: ARG002
     ) -> FlowResult:
-        """Show menu: add a crop or finish."""
+        """Show menu: add a crop, remove a crop, or finish."""
         return self.async_show_menu(
             step_id="init",
-            menu_options=["add_crop", "finish"],
+            menu_options=["add_crop", "remove_crop", "finish"],
+        )
+
+    async def async_step_remove_crop(
+        self, user_input: dict[str, Any] | None = None
+    ) -> FlowResult:
+        """Let the user pick a crop to delete."""
+        existing_crops: list[dict] = list(self.config_entry.data.get(CONF_CROPS, []))
+
+        if user_input is not None:
+            crop_id = user_input.get("crop_id")
+            updated_crops = [c for c in existing_crops if c["id"] != crop_id]
+            self.hass.config_entries.async_update_entry(
+                self.config_entry,
+                data={**self.config_entry.data, CONF_CROPS: updated_crops},
+            )
+            await self.hass.config_entries.async_reload(self.config_entry.entry_id)
+            return self.async_create_entry(title="", data={})
+
+        options = [
+            selector.SelectOptionDict(value=c["id"], label=c.get(ATTR_NAME, c["id"]))
+            for c in existing_crops
+        ]
+        return self.async_show_form(
+            step_id="remove_crop",
+            data_schema=vol.Schema(
+                {
+                    vol.Required("crop_id"): selector.SelectSelector(
+                        selector.SelectSelectorConfig(options=options)
+                    ),
+                }
+            ),
         )
 
     async def async_step_add_crop(
@@ -123,10 +154,6 @@ class CropPlannerOptionsFlowHandler(config_entries.OptionsFlow):
             self._crop_base = {
                 ATTR_NAME: user_input[ATTR_NAME],
                 ATTR_QUANTITY: user_input.get(ATTR_QUANTITY, 1),
-                ATTR_SOWING_DATE: (
-                    user_input.get(ATTR_SOWING_DATE)
-                    or datetime.now(tz=UTC).date().isoformat()
-                ),
             }
             species_hint = (
                 user_input.get(ATTR_SPECIES, "").strip()
@@ -231,6 +258,8 @@ class CropPlannerOptionsFlowHandler(config_entries.OptionsFlow):
             phases: dict[str, dict[str, str | None]] = {}
             for phase in CROP_PHASES:
                 start = user_input.get(f"{phase}_start") or None
+                if(phase == PHASE_SOWING and start == None):
+                    start = datetime.now(tz=UTC).date().isoformat()
                 end = user_input.get(f"{phase}_end") or None
                 if start or end:
                     phases[phase] = {"start": start, "end": end}

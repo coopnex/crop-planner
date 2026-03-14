@@ -34,7 +34,6 @@ def create_crop_data(data: Any) -> CropData:
         name=data["name"],
         quantity=data["quantity"],
         species=data.get("species", None),
-        sowing_date=data["sowing_date"],
         image_url=data.get("image_url", None),
         phases=phases,
     )
@@ -62,7 +61,6 @@ class CropData:
     id: str
     name: str
     quantity: int
-    sowing_date: date
     species: str | None = None
     image_url: str | None = None
     phases: dict[str, CropPhase] = field(default_factory=dict)
