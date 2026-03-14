@@ -15,6 +15,7 @@ from homeassistant.components.ai_task import (
     async_generate_data,
 )
 from homeassistant.components.ai_task.const import DATA_COMPONENT
+from homeassistant.components.persistent_notification import async_create
 from homeassistant.const import Platform
 from homeassistant.exceptions import HomeAssistantError
 from homeassistant.helpers import entity_registry as er
@@ -39,11 +40,14 @@ _DEFAULT_INSTRUCTIONS = (
     "Generate task summaries and descriptions in the user's language. "
     "Propose also new recommended crops according to the current time of the year. "
     "Check existing tasks to avoid repetitions."
-    "Return up to new 10 suggested tasks each time."
+    "Return up to new 10 suggested tasks each time. "
+    "Also return a short garden_summary (2-3 sentences) describing the current "
+    "state of the garden and the most urgent priorities, in the user's language."
 )
 
 _SUGGESTION_SCHEMA = vol.Schema(
     {
+        vol.Required("garden_summary"): str,
         vol.Required("tasks"): [
             vol.Schema(
                 {
@@ -54,12 +58,14 @@ _SUGGESTION_SCHEMA = vol.Schema(
                     vol.Optional("crop_entity_id"): str,
                 }
             )
-        ]
+        ],
     }
 )
 
 
-def _build_crop_context(hass: HomeAssistant, crops: list[dict[str, Any]], todos: list[dict[str, Any]]) -> str:
+def _build_crop_context(
+    hass: HomeAssistant, crops: list[dict[str, Any]], todos: list[dict[str, Any]]
+) -> str:
     """Serialise current crop state into a human-readable block for the LLM."""
     today = datetime.now(tz=UTC).date().isoformat()
     language = hass.config.language
@@ -94,10 +100,8 @@ def _build_crop_context(hass: HomeAssistant, crops: list[dict[str, Any]], todos:
     lines.append("* Current todos:")
     for todo in todos:
         summary = todo.get("summary")
-        description = f"({todo.get("description") or ""})"
-        lines.append(
-            f"  - {summary} {description}"
-        )
+        description = f"({todo.get('description') or ''})"
+        lines.append(f"  - {summary} {description}")
 
     return "\n".join(lines)
 
@@ -182,9 +186,25 @@ class GenerateChoresAITask(AITaskEntity):
             structure=_SUGGESTION_SCHEMA,
         )
         LOGGER.debug("Received crop chore generation response: %s", result)
-        tasks: list[dict] = (result.data or {}).get("tasks", [])
+        data: dict = result.data or {}
+        tasks: list[dict] = data.get("tasks", [])
         if tasks:
             self._add_todos(tasks)
+
+        garden_summary: str = data.get("garden_summary", "")
+        if garden_summary:
+            task_lines = "\n".join(
+                f"- {t.get('summary', '')}" for t in tasks if t.get("summary")
+            )
+            message = f"{garden_summary}"
+            if task_lines:
+                message += f"\n\n**New tasks added:**\n{task_lines}"
+            async_create(
+                self._hass,
+                message=message,
+                title="🌱 Crop Planner",
+                notification_id=f"{DOMAIN}_chore_suggestions",
+            )
 
         return result
 
