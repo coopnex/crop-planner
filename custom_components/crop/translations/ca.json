@@ -37,6 +37,24 @@
             "crop_calendar": {
                 "name": "Calendari de conreu"
             }
+        },
+        "crop": {
+            "crop": {
+                "state": {
+                    "ok": "Bé",
+                    "sowing": "Sembra",
+                    "germination": "Germinació",
+                    "flowering": "Floració",
+                    "harvest": "Collita",
+                    "watering": "Reg",
+                    "fertilising": "Adobament",
+                    "pest_inspection": "Inspecció de plagues",
+                    "pruning": "Poda",
+                    "harvesting": "Recol·lecció",
+                    "planting": "Plantació",
+                    "other": "Altre"
+                }
+            }
         }
     },
     "options": {

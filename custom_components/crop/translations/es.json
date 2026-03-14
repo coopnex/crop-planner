@@ -37,6 +37,24 @@
             "crop_calendar": {
                 "name": "Calendario de cultivo"
             }
+        },
+        "crop": {
+            "crop": {
+                "state": {
+                    "ok": "Bien",
+                    "sowing": "Siembra",
+                    "germination": "Germinación",
+                    "flowering": "Floración",
+                    "harvest": "Cosecha",
+                    "watering": "Riego",
+                    "fertilising": "Abonado",
+                    "pest_inspection": "Inspección de plagas",
+                    "pruning": "Poda",
+                    "harvesting": "Recolección",
+                    "planting": "Plantación",
+                    "other": "Otro"
+                }
+            }
         }
     },
     "options": {
@@ -51,7 +69,7 @@
                 }
             },
             "add_crop": {
-                "title": "Añadir Cultivo",
+                "title": "Añadir cultivo",
                 "description": "Añade un nuevo cultivo al planificador. Introduce un nombre de especie para buscar en OpenPlantbook.",
                 "data": {
                     "name": "Nombre del cultivo",
@@ -60,7 +78,7 @@
                 }
             },
             "select_species": {
-                "title": "Seleccionar Especie",
+                "title": "Seleccionar especie",
                 "description": "Elige la especie para **{name}** de los resultados de OpenPlantbook, o introduce un nuevo término de búsqueda para refinar.\n\n[Ver resultados en OpenPlantbook]({opb_url})",
                 "data": {
                     "species": "Especie",
@@ -68,14 +86,14 @@
                 }
             },
             "remove_crops": {
-                "title": "Eliminar Cultivos",
+                "title": "Eliminar cultivos",
                 "description": "Selecciona uno o más cultivos a eliminar.",
                 "data": {
                     "crop_ids": "Cultivos"
                 }
             },
             "phases": {
-                "title": "Fases del Ciclo de Vida",
+                "title": "Fases del ciclo de vida",
                 "description": "Establece las fechas de inicio de cada fase de crecimiento de **{name}**. Todos los campos son opcionales.",
                 "data": {
                     "sowing": "Siembra",

@@ -6,7 +6,8 @@ Crop Planner Home Assistant integration to represent planted crops, their
 quantities, and device/entity registration behavior.
 """
 
-from typing import TYPE_CHECKING
+from datetime import UTC, datetime
+from typing import TYPE_CHECKING, ClassVar
 
 from homeassistant.components.sensor import SensorDeviceClass
 from homeassistant.const import STATE_OK
@@ -25,9 +26,11 @@ from custom_components.crop.data import (
 
 from .const import (
     COORDINATOR,
+    CROP_PHASES,
     CROP_PLATFORM,
     DOMAIN,
     ICON,
+    ChoreCategory,
 )
 
 if TYPE_CHECKING:
@@ -38,6 +41,12 @@ class Crop(Entity):
     """Class to represent a crop."""
 
     _attr_device_class = SensorDeviceClass.ENUM
+    _attr_options: ClassVar[list[str]] = [
+        STATE_OK,
+        *CROP_PHASES,
+        *[c.value for c in ChoreCategory],
+    ]
+    _attr_translation_key = "crop"
 
     def __init__(self, hass: HomeAssistant, config: CropData) -> None:
         """Initialize a crop with a name, planting date, and harvest date."""
@@ -59,7 +68,7 @@ class Crop(Entity):
             f"{CROP_PLATFORM}.{{}}", self._name, current_ids={}
         )
         self._attr_icon = ICON
-        self._attr_state = STATE_OK
+        self._attr_state = STATE_OK  # computed properly on first update()
 
     @property
     def name(self) -> str:
@@ -91,8 +100,26 @@ class Crop(Entity):
 
     def update(self) -> None:
         """Run on every update of the entities."""
-        new_state = STATE_OK
-        self._attr_state = new_state
+        self._attr_state = self._compute_state()
+
+    def _compute_state(self) -> str:
+        """Derive state from recent chores or current phase."""
+        today = datetime.now(tz=UTC).date()
+
+        # 2. Current lifecycle phase
+        for phase in CROP_PHASES:
+            phase_data = self._phases.get(phase)
+            if phase_data is None:
+                continue
+            start = phase_data.start
+            end = phase_data.end
+            if start and end:
+                if start <= today <= end:
+                    return phase
+            elif start and today >= start:
+                return phase
+
+        return STATE_OK
 
     def update_registry(self) -> None:
         """Update registry with correct data."""
