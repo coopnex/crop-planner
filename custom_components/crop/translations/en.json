@@ -11,6 +11,12 @@
             }
         }
     },
+    "notification": {
+        "chore_suggestions": {
+            "new_tasks_added": "New tasks added",
+            "open_chore_list": "Open chore list"
+        }
+    },
     "entity": {
         "ai_task": {
             "generate_chores": {

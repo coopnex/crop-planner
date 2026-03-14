@@ -11,6 +11,12 @@
             }
         }
     },
+    "notification": {
+        "chore_suggestions": {
+            "new_tasks_added": "Nuevas tareas añadidas",
+            "open_chore_list": "Abrir lista de tareas"
+        }
+    },
     "entity": {
         "ai_task": {
             "generate_chores": {

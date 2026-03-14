@@ -2,8 +2,10 @@
 
 from __future__ import annotations
 
+import json
 import uuid
 from datetime import UTC, datetime
+from pathlib import Path
 from typing import TYPE_CHECKING, Any
 
 import voluptuous as vol
@@ -61,7 +63,6 @@ _SUGGESTION_SCHEMA = vol.Schema(
         ],
     }
 )
-
 
 def _build_crop_context(
     hass: HomeAssistant, crops: list[dict[str, Any]], todos: list[dict[str, Any]]
@@ -193,12 +194,18 @@ class GenerateChoresAITask(AITaskEntity):
 
         garden_summary: str = data.get("garden_summary", "")
         if garden_summary:
+            language = self._hass.config.language
             task_lines = "\n".join(
                 f"- {t.get('summary', '')}" for t in tasks if t.get("summary")
             )
-            message = f"{garden_summary}"
+            message = garden_summary
             if task_lines:
-                message += f"\n\n**New tasks added:**\n{task_lines}"
+                message += f"\n\n**{task_lines}"
+            todo_entity_id = er.async_get(self._hass).async_get_entity_id(
+                "todo", DOMAIN, f"{self._entry.entry_id}_todos"
+            )
+            if todo_entity_id:
+                message += f"\n\n[📋](/todo?entity_id={todo_entity_id})"
             async_create(
                 self._hass,
                 message=message,
