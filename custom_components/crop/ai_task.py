@@ -200,7 +200,7 @@ class GenerateChoresAITask(AITaskEntity):
             )
             message = garden_summary
             if task_lines:
-                message += f"\n\n**{task_lines}"
+                message += f"\n\n{task_lines}"
             todo_entity_id = er.async_get(self._hass).async_get_entity_id(
                 "todo", DOMAIN, f"{self._entry.entry_id}_todos"
             )
