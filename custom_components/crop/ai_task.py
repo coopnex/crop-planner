@@ -22,6 +22,7 @@ from homeassistant.helpers import entity_registry as er
 from homeassistant.helpers.entity import async_generate_entity_id
 
 from .const import (
+    CHORE_CATEGORY_ICONS,
     CONF_CROPS,
     CONF_TODOS,
     COORDINATOR,
@@ -229,16 +230,18 @@ class GenerateChoresAITask(AITaskEntity):
             summary = task.get("summary", "").strip()
             if not summary:
                 continue
+            category = task.get("category", "")
+            icon = CHORE_CATEGORY_ICONS.get(category, "")
             entry: dict = {
                 "uid": str(uuid.uuid4()),
-                "summary": summary,
+                "summary": f"{icon} {summary}" if icon else summary,
                 "status": "needs_action",
                 "due": task.get("due_date"),
                 "description": task.get("description"),
             }
             if crop_entity_id := task.get("crop_entity_id"):
                 entry["crop_entity_id"] = crop_entity_id
-            if category := task.get("category"):
+            if category:
                 entry["category"] = category
             existing.append(entry)
             LOGGER.debug("Adding suggested todo: %s", summary)

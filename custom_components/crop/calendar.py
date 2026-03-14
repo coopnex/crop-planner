@@ -110,7 +110,7 @@ class CropPlannerCalendar(CalendarEntity):
                 CalendarEvent(
                     start=due,
                     end=due + datetime.timedelta(days=1),
-                    summary=f"☑ {todo.get('summary', '')}",
+                    summary=todo.get("summary", ""),
                     description=todo.get("description"),
                 )
             )

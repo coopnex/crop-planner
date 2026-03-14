@@ -130,12 +130,10 @@ class CropTodoList(TodoListEntity):
         crop_entity_id = stored_item.get("crop_entity_id")
         if not crop_entity_id:
             return
-        category = stored_item.get("category", "")
-        icon = CHORE_CATEGORY_ICONS.get(category, CHORE_CATEGORY_ICONS.get("other", ""))
         async_log_entry(
             self._hass,
             name=crop_entity_id,
-            message=f"{icon} Completed chore: {item.summary}",
+            message=f"{item.summary}",
             domain=DOMAIN,
             entity_id=crop_entity_id,
         )
