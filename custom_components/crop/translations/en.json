@@ -20,12 +20,12 @@
     "entity": {
         "ai_task": {
             "generate_chores": {
-                "name": "Generate crop chores"
+                "name": "Suggest crop chores"
             }
         },
         "button": {
             "generate_chores": {
-                "name": "Generate crop chores"
+                "name": "Suggest chores"
             }
         },
         "todo": {
@@ -37,12 +37,30 @@
             "crop_calendar": {
               "name": "Crop calendar"
             }
+        },
+        "crop": {
+            "crop": {
+                "state": {
+                    "ok": "Ok",
+                    "sowing": "Sowing",
+                    "germination": "Germination",
+                    "flowering": "Flowering",
+                    "harvest": "Harvest",
+                    "watering": "Watering",
+                    "fertilising": "Fertilising",
+                    "pest_inspection": "Pest inspection",
+                    "pruning": "Pruning",
+                    "harvesting": "Harvesting",
+                    "planting": "Planting",
+                    "other": "Other"
+                }
+            }
         }
     },
     "options": {
         "step": {
             "init": {
-                "title": "Crop Planner Options",
+                "title": "Crop Planner options",
                 "menu_options": {
                     "add_crop": "Add a new crop",
                     "remove_crops": "Remove crops",
@@ -51,7 +69,7 @@
                 }
             },
             "add_crop": {
-                "title": "Add Crop",
+                "title": "Add crop",
                 "description": "Add a new crop entity to the planner. Enter a species name to search OpenPlantbook.",
                 "data": {
                     "name": "Crop name",
@@ -61,7 +79,7 @@
                 }
             },
             "select_species": {
-                "title": "Select Species",
+                "title": "Select species",
                 "description": "Choose the species for **{name}** from the OpenPlantbook results, or enter a new search term below to refine.\n\n[Browse results on OpenPlantbook]({opb_url})",
                 "data": {
                     "species": "Species",
@@ -69,7 +87,7 @@
                 }
             },
             "remove_crops": {
-                "title": "Remove Crops",
+                "title": "Remove crops",
                 "description": "Select one or more crops to remove.",
                 "data": {
                     "crop_ids": "Crops"

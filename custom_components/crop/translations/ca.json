@@ -1,0 +1,115 @@
+{
+    "config": {
+        "step": {
+            "user": {
+                "description": "Configura la integració Planificador de cultius. Els cultius es poden afegir des de les opcions de la integració. Les credencials d'OpenPlantbook són opcionals — deixa-les en blanc per ometre la cerca d'espècies.",
+                "title": "Planificador de cultius",
+                "data": {
+                    "client_id": "Client ID d'OpenPlantbook",
+                    "client_secret": "Client Secret d'OpenPlantbook"
+                }
+            }
+        }
+    },
+    "notification": {
+        "chore_suggestions": {
+            "new_tasks_added": "Noves tasques afegides",
+            "open_chore_list": "Obre la llista de tasques"
+        }
+    },
+    "entity": {
+        "ai_task": {
+            "generate_chores": {
+                "name": "Suggerir tasques de l'hort"
+            }
+        },
+        "button": {
+            "generate_chores": {
+                "name": "Suggerir tasques"
+            }
+        },
+        "todo": {
+            "crop_chores": {
+                "name": "Tasques de l'hort"
+            }
+        },
+        "calendar": {
+            "crop_calendar": {
+                "name": "Calendari de conreu"
+            }
+        },
+        "crop": {
+            "crop": {
+                "state": {
+                    "ok": "Bé",
+                    "sowing": "Sembra",
+                    "germination": "Germinació",
+                    "flowering": "Floració",
+                    "harvest": "Collita",
+                    "watering": "Reg",
+                    "fertilising": "Adobament",
+                    "pest_inspection": "Inspecció de plagues",
+                    "pruning": "Poda",
+                    "harvesting": "Recol·lecció",
+                    "planting": "Plantació",
+                    "other": "Altre"
+                }
+            }
+        }
+    },
+    "options": {
+        "step": {
+            "init": {
+                "title": "Opcions del Planificador de cultius",
+                "menu_options": {
+                    "add_crop": "Afegeix un cultiu nou",
+                    "remove_crops": "Elimina cultius",
+                    "clear_todos": "Esborra totes les tasques",
+                    "finish": "Fet"
+                }
+            },
+            "add_crop": {
+                "title": "Afegeix un cultiu",
+                "description": "Afegeix una nova entitat de cultiu al planificador. Introdueix un nom d'espècie per cercar a OpenPlantbook.",
+                "data": {
+                    "name": "Nom del cultiu",
+                    "quantity": "Quantitat",
+                    "sowing_date": "Data de sembra",
+                    "species": "Cerca d'espècie (opcional)"
+                }
+            },
+            "select_species": {
+                "title": "Selecciona l'espècie",
+                "description": "Tria l'espècie per a **{name}** dels resultats d'OpenPlantbook, o introdueix un nou terme de cerca per refinar.\n\n[Navega pels resultats a OpenPlantbook]({opb_url})",
+                "data": {
+                    "species": "Espècie",
+                    "refine_search": "Refina la cerca"
+                }
+            },
+            "remove_crops": {
+                "title": "Elimina cultius",
+                "description": "Selecciona un o més cultius per eliminar.",
+                "data": {
+                    "crop_ids": "Cultius"
+                }
+            },
+            "phases": {
+                "title": "Fases del cicle de vida",
+                "description": "Estableix els intervals de dates esperats per a cada fase de creixement de **{name}**. Tots els camps són opcionals.",
+                "data": {
+                    "sowing": "Sembra",
+                    "germination": "Germinació",
+                    "flowering": "Floració",
+                    "harvest": "Collita"
+                }
+            },
+            "clear_todos": {
+                "title": "Esborra totes les tasques",
+                "description": "Això eliminarà permanentment totes les tasques de cultiu. Prem enviar per confirmar."
+            },
+            "finish": {
+                "title": "Fet"
+            }
+        }
+    }
+}
