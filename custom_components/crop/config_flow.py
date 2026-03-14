@@ -163,7 +163,7 @@ class CropPlannerOptionsFlowHandler(config_entries.OptionsFlow):
         """Show the crop form; proceed to species selection if a hint is given."""
         if user_input is not None:
             self._crop_base = {
-                ATTR_NAME: user_input[ATTR_NAME],
+                ATTR_NAME: user_input[ATTR_NAME].strip().capitalize(),
                 ATTR_QUANTITY: user_input.get(ATTR_QUANTITY, 1),
             }
             species_hint = (
