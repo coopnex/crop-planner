@@ -109,7 +109,7 @@ class CropPlannerOptionsFlowHandler(config_entries.OptionsFlow):
         """Show menu: add a crop, remove a crop, or finish."""
         return self.async_show_menu(
             step_id="init",
-            menu_options=["add_crop", "remove_crop", "finish"],
+            menu_options=["add_crop", "remove_crop", "clear_todos", "finish"],
         )
 
     async def async_step_remove_crop(
@@ -142,6 +142,20 @@ class CropPlannerOptionsFlowHandler(config_entries.OptionsFlow):
                 }
             ),
         )
+
+    async def async_step_clear_todos(
+        self, user_input: dict[str, Any] | None = None
+    ) -> FlowResult:
+        """Clear all todo items after confirmation."""
+        if user_input is not None:
+            self.hass.config_entries.async_update_entry(
+                self.config_entry,
+                data={**self.config_entry.data, "todos": []},
+            )
+            await self.hass.config_entries.async_reload(self.config_entry.entry_id)
+            return self.async_create_entry(title="", data={})
+
+        return self.async_show_form(step_id="clear_todos")
 
     async def async_step_add_crop(
         self, user_input: dict[str, Any] | None = None

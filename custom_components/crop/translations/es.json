@@ -35,6 +35,7 @@
                 "menu_options": {
                     "add_crop": "Añadir un nuevo cultivo",
                     "remove_crop": "Eliminar un cultivo",
+                    "clear_todos": "Borrar todas las tareas",
                     "finish": "Hecho"
                 }
             },
@@ -71,6 +72,10 @@
                     "flowering": "Floración",
                     "harvest": "Cosecha"
                 }
+            },
+            "clear_todos": {
+                "title": "Borrar todas las tareas",
+                "description": "Esto eliminará permanentemente todas las tareas de cultivo. Pulsa enviar para confirmar."
             },
             "finish": {
                 "title": "Hecho"

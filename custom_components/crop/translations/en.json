@@ -35,6 +35,7 @@
                 "menu_options": {
                     "add_crop": "Add a new crop",
                     "remove_crop": "Remove a crop",
+                    "clear_todos": "Clear all chores",
                     "finish": "Done"
                 }
             },
@@ -72,6 +73,10 @@
                     "flowering": "Flowering",
                     "harvest": "Harvest"
                 }
+            },
+            "clear_todos": {
+                "title": "Clear all chores",
+                "description": "This will permanently delete all crop chores. Press submit to confirm."
             },
             "finish": {
                 "title": "Done"
