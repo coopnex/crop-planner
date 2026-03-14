@@ -16,7 +16,6 @@ from homeassistant.helpers.service import async_register_admin_service
 from .const import (
     ATTR_NAME,
     ATTR_QUANTITY,
-    ATTR_SOWING_DATE,
     ATTR_SPECIES,
     COORDINATOR,
     DOMAIN,
@@ -44,7 +43,6 @@ CREATE_CROP_SCHEMA = vol.Schema(
     {
         vol.Required(ATTR_NAME): cv.string,
         vol.Optional(ATTR_QUANTITY): cv.positive_int,
-        vol.Optional(ATTR_SOWING_DATE): cv.date,
         vol.Optional(ATTR_SPECIES): cv.string,
     }
 )
@@ -71,9 +69,6 @@ def register_component_services(component: EntityComponent) -> None:
             id=call.context.id,
             name=call.data[ATTR_NAME],
             quantity=call.data.get(ATTR_QUANTITY, 1),
-            sowing_date=call.data.get(
-                ATTR_SOWING_DATE, datetime.now(tz=UTC).date()
-            ).isoformat(),
             species=call.data.get(ATTR_SPECIES, None),
         )
         if crop_data.species is not None:

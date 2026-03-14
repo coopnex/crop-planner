@@ -159,7 +159,7 @@ All contributions are licensed under the [MIT License](LICENSE).
 - **Todo-list platform** — expose crops as HA to-do items for checklist-style management
 - **Harvest date tracking** — add expected harvest date based on species grow time from OpenPlantbook
 - **Crop status lifecycle** — model states beyond `ok` (e.g. germinating, growing, harvested, failed)
-- **Translations (i18n)** — add `strings.json` and translation files for multi-language support
+- **Translations (i18n)** — add `strings.json` and translation files for multi-language support, mainly for catalan and spanish
 - **Delete / archive service** — service call to remove or archive a crop entry
 - **Notification automations** — blueprint for sowing-date reminders and harvest alerts
 - **UI card** — custom Lovelace card for a visual garden overview

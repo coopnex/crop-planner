@@ -1,45 +1,107 @@
 {
-  "config": {
-      "step": {
-          "user": {
-              "data": {
-                  "entity_id": "Input sensor",
-                  "name": "Name"
-              },
-              "description": "Se creará una instancia de Crop Planner en tu sistema."
-          }
-      }
-  },
-  "services": {
-    "create_crop": {
-      "name": "Crear cultivo",
-      "description": "Crea una nueva entrada de cultivo",
-      "fields": {
-        "name": {
-          "name": "Nombre del cultivo",
-          "description": "Nombre del cultivo",
-          "example": "Tomate de colgar"
-        },
-        "quantity": {
-          "name": "Cantidad",
-          "description": "Número de plantas en el cultivo"
-        },
-        "sowing_date": {
-          "name": "Fecha de siembra",
-          "description": "Fecha en la que se sembró el cultivo",
-          "example": "2024-04-15"
+    "config": {
+        "step": {
+            "user": {
+                "title": "Planificador de Cultivos",
+                "description": "Configura la integración Planificador de Cultivos. Los cultivos se pueden añadir desde las opciones de la integración. Las credenciales de OpenPlantbook son opcionales — déjalas en blanco para omitir la búsqueda de especies.",
+                "data": {
+                    "client_id": "Client ID de OpenPlantbook",
+                    "client_secret": "Client Secret de OpenPlantbook"
+                }
+            }
         }
-      }
+    },
+    "entity": {
+        "todo": {
+            "crop_chores": {
+                "name": "Tareas de cultivo"
+            }
+        },
+        "calendar": {
+            "crop_calendar": {
+                "name": "Calendario de cultivo"
+            }
+        }
+    },
+    "options": {
+        "step": {
+            "init": {
+                "title": "Opciones del Planificador de Cultivos",
+                "menu_options": {
+                    "add_crop": "Añadir un nuevo cultivo",
+                    "remove_crop": "Eliminar un cultivo",
+                    "finish": "Hecho"
+                }
+            },
+            "add_crop": {
+                "title": "Añadir Cultivo",
+                "description": "Añade un nuevo cultivo al planificador. Introduce un nombre de especie para buscar en OpenPlantbook.",
+                "data": {
+                    "name": "Nombre del cultivo",
+                    "quantity": "Cantidad",
+                    "species": "Búsqueda de especie (opcional)"
+                }
+            },
+            "select_species": {
+                "title": "Seleccionar Especie",
+                "description": "Elige la especie para **{name}** de los resultados de OpenPlantbook, o introduce un nuevo término de búsqueda para refinar.\n\n[Ver resultados en OpenPlantbook]({opb_url})",
+                "data": {
+                    "species": "Especie",
+                    "refine_search": "Refinar búsqueda"
+                }
+            },
+            "remove_crop": {
+                "title": "Eliminar Cultivo",
+                "description": "Selecciona el cultivo que deseas eliminar.",
+                "data": {
+                    "crop_id": "Cultivo"
+                }
+            },
+            "phases": {
+                "title": "Fases del Ciclo de Vida",
+                "description": "Establece las fechas de inicio de cada fase de crecimiento de **{name}**. Todos los campos son opcionales.",
+                "data": {
+                    "sowing": "Siembra",
+                    "germination": "Germinación",
+                    "flowering": "Floración",
+                    "harvest": "Cosecha"
+                }
+            },
+            "finish": {
+                "title": "Hecho"
+            }
+        }
+    },
+    "services": {
+        "create_crop": {
+            "name": "Crear cultivo",
+            "description": "Crea una nueva entrada de cultivo",
+            "fields": {
+                "name": {
+                    "name": "Nombre del cultivo",
+                    "description": "Nombre del cultivo",
+                    "example": "Tomate de colgar"
+                },
+                "quantity": {
+                    "name": "Cantidad",
+                    "description": "Número de plantas en el cultivo"
+                },
+                "sowing_date": {
+                    "name": "Fecha de siembra",
+                    "description": "Fecha en la que se sembró el cultivo",
+                    "example": "2024-04-15"
+                }
+            }
+        }
+    },
+    "entity_component": {
+        "_": {
+            "state_attributes": {
+                "name": { "name": "Nombre" },
+                "quantity": { "name": "Cantidad" },
+                "species": { "name": "Especie" },
+                "phases": { "name": "Fases" }
+            }
+        }
     }
-  },
-  "entity_component": {
-    "_": {
-      "state_attributes": {
-        "name": { "name": "Nombre" },
-        "quantity": { "name": "Cantidad" },
-        "sowing_date": { "name": "Fecha de siembra" },
-        "species": { "name": "Especie" }
-      }
-    }
-  }
 }

@@ -10,7 +10,7 @@ COORDINATOR = "coordinator"
 COMPONENT = "component"
 ATTRIBUTION = "Data provided by http://jsonplaceholder.typicode.com/"
 CROP_PLATFORM = "crop"
-ICON = "mdi:leaf"
+ICON = "mdi:sprout"
 
 CONF_CROPS = "crops"
 ATTR_CROP = "crop"
@@ -27,10 +27,21 @@ STATUS_INITIALISING = "initialising"
 STATUS_PAUSED = "paused"
 STATUS_DELAY = "delay"
 
+# Crop lifecycle phases
+PHASE_SOWING = "sowing"
+PHASE_GERMINATION = "germination"
+PHASE_FLOWERING = "flowering"
+PHASE_HARVEST = "harvest"
+CROP_PHASES = [PHASE_SOWING, PHASE_GERMINATION, PHASE_FLOWERING, PHASE_HARVEST]
+PHASE_ICONS = {
+    PHASE_SOWING: "🌱",
+    PHASE_GERMINATION: "🌿",
+    PHASE_FLOWERING: "🌸",
+    PHASE_HARVEST: "🍂",
+}
+
 # OpenPlantBook constants
-DOMAIN_PLANTBOOK = "openplantbook"
-OPB_GET = "get"
-OPB_SEARCH = "search"
-OPB_SEARCH_RESULT = "search_result"
+CONF_CLIENT_ID = "client_id"
+CONF_CLIENT_SECRET = "client_secret"  # noqa: S105
 OPB_PID = "pid"
 OPB_DISPLAY_PID = "display_pid"

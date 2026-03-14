@@ -2,8 +2,24 @@
     "config": {
         "step": {
             "user": {
-                "description": "Set up the Crop Planner integration. Crops can be added from the integration options.",
-                "title": "Crop Planner"
+                "description": "Set up the Crop Planner integration. Crops can be added from the integration options. OpenPlantbook credentials are optional — leave blank to skip species lookup.",
+                "title": "Crop Planner",
+                "data": {
+                    "client_id": "OpenPlantbook Client ID",
+                    "client_secret": "OpenPlantbook Client Secret"
+                }
+            }
+        }
+    },
+    "entity": {
+        "todo": {
+            "crop_chores": {
+                "name": "Crop chores"
+            }
+        },
+        "calendar": {
+            "crop_calendar": {
+              "name": "Crop calendar"
             }
         }
     },
@@ -13,17 +29,43 @@
                 "title": "Crop Planner Options",
                 "menu_options": {
                     "add_crop": "Add a new crop",
+                    "remove_crop": "Remove a crop",
                     "finish": "Done"
                 }
             },
             "add_crop": {
                 "title": "Add Crop",
-                "description": "Add a new crop entity to the planner.",
+                "description": "Add a new crop entity to the planner. Enter a species name to search OpenPlantbook.",
                 "data": {
                     "name": "Crop name",
                     "quantity": "Quantity",
                     "sowing_date": "Sowing date",
-                    "species": "Species (optional, used for OpenPlantbook lookup)"
+                    "species": "Species search (optional)"
+                }
+            },
+            "select_species": {
+                "title": "Select Species",
+                "description": "Choose the species for **{name}** from the OpenPlantbook results, or enter a new search term below to refine.\n\n[Browse results on OpenPlantbook]({opb_url})",
+                "data": {
+                    "species": "Species",
+                    "refine_search": "Refine search"
+                }
+            },
+            "remove_crop": {
+                "title": "Remove Crop",
+                "description": "Select the crop to remove.",
+                "data": {
+                    "crop_id": "Crop"
+                }
+            },
+            "phases": {
+                "title": "Lifecycle Phases",
+                "description": "Set the expected date ranges for each growth phase of **{name}**. All fields are optional.",
+                "data": {
+                    "sowing": "Sowing",
+                    "germination": "Germination",
+                    "flowering": "Flowering",
+                    "harvest": "Harvest"
                 }
             },
             "finish": {

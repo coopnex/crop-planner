@@ -10,6 +10,15 @@ if [[ ! -d "${PWD}/config" ]]; then
     hass --config "${PWD}/config" --script ensure_config
 fi
 
+# Install OpenPlantbook dependency
+
+#if [[ ! -d "${PWD}/config/custom_components/openplantbook" ]]; then
+#    mkdir -p "${PWD}/config/custom_components"
+#    cp -r "${PWD}/.local/openplantbook/custom_components/openplantbook"  \
+#        "${PWD}/config/custom_components/openplantbook"
+#fi
+
+
 # Set the path to custom_components
 ## This let's us have the structure we want <root>/custom_components/integration_blueprint
 ## while at the same time have Home Assistant configuration inside <root>/config

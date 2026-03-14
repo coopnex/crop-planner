@@ -27,7 +27,8 @@ if TYPE_CHECKING:
     from homeassistant.core_config import Config
     from homeassistant.helpers.typing import ConfigType
 
-PLATFORMS: list[Platform] = [Platform.CALENDAR]
+
+PLATFORMS: list[Platform] = [Platform.CALENDAR, Platform.TODO]
 CONFIG_SCHEMA = cv.empty_config_schema(DOMAIN)
 
 
