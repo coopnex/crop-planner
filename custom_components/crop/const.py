@@ -27,6 +27,19 @@ STATUS_INITIALISING = "initialising"
 STATUS_PAUSED = "paused"
 STATUS_DELAY = "delay"
 
+# Crop lifecycle phases
+PHASE_SOWING = "sowing"
+PHASE_GERMINATION = "germination"
+PHASE_FLOWERING = "flowering"
+PHASE_HARVEST = "harvest"
+CROP_PHASES = [PHASE_SOWING, PHASE_GERMINATION, PHASE_FLOWERING, PHASE_HARVEST]
+PHASE_ICONS = {
+    PHASE_SOWING: "🌱",
+    PHASE_GERMINATION: "🌿",
+    PHASE_FLOWERING: "🌸",
+    PHASE_HARVEST: "🍂",
+}
+
 # OpenPlantBook constants
 CONF_CLIENT_ID = "client_id"
 CONF_CLIENT_SECRET = "client_secret"

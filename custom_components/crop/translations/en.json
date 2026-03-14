@@ -2,8 +2,12 @@
     "config": {
         "step": {
             "user": {
-                "description": "Set up the Crop Planner integration. Crops can be added from the integration options.",
-                "title": "Crop Planner"
+                "description": "Set up the Crop Planner integration. Crops can be added from the integration options. OpenPlantbook credentials are optional — leave blank to skip species lookup.",
+                "title": "Crop Planner",
+                "data": {
+                    "client_id": "OpenPlantbook Client ID",
+                    "client_secret": "OpenPlantbook Client Secret"
+                }
             }
         }
     },
@@ -32,6 +36,20 @@
                 "data": {
                     "species": "Species",
                     "refine_search": "Refine search"
+                }
+            },
+            "phases": {
+                "title": "Lifecycle Phases",
+                "description": "Set the expected date ranges for each growth phase of **{name}**. All fields are optional.",
+                "data": {
+                    "sowing_start": "Sowing — start",
+                    "sowing_end": "Sowing — end",
+                    "germination_start": "Germination — start",
+                    "germination_end": "Germination — end",
+                    "flowering_start": "Flowering — start",
+                    "flowering_end": "Flowering — end",
+                    "harvest_start": "Harvest — start",
+                    "harvest_end": "Harvest — end"
                 }
             },
             "finish": {

@@ -21,11 +21,13 @@ from .const import (
     CONF_CLIENT_ID,
     CONF_CLIENT_SECRET,
     CONF_CROPS,
+    CROP_PHASES,
     CROP_PLANNER,
     DOMAIN,
     LOGGER,
     OPB_DISPLAY_PID,
     OPB_PID,
+    PHASE_ICONS,
 )
 from .openplantbook import OpenPlantbookHelper
 
@@ -42,6 +44,15 @@ _CROP_SCHEMA = vol.Schema(
         vol.Optional(ATTR_SPECIES): cv.string,
     }
 )
+
+
+def _phases_schema() -> vol.Schema:
+    """Build a schema with optional start/end DateSelector for each phase."""
+    fields: dict[vol.Optional, Any] = {}
+    for phase in CROP_PHASES:
+        fields[vol.Optional(f"{phase}_start")] = selector.DateSelector()
+        fields[vol.Optional(f"{phase}_end")] = selector.DateSelector()
+    return vol.Schema(fields)
 
 
 class CropPlannerFlowHandler(config_entries.ConfigFlow, domain=DOMAIN):
@@ -89,6 +100,8 @@ class CropPlannerOptionsFlowHandler(config_entries.OptionsFlow):
     def __init__(self) -> None:
         """Initialize the options flow."""
         self._crop_base: dict[str, Any] = {}
+        self._pending_species: str | None = None
+        self._pending_image_url: str | None = None
         self._species_options: list[selector.SelectOptionDict] = []
         self._last_search_hint: str = ""
 
@@ -115,10 +128,11 @@ class CropPlannerOptionsFlowHandler(config_entries.OptionsFlow):
                     or datetime.now(tz=UTC).date().isoformat()
                 ),
             }
-            species_hint = user_input.get(ATTR_SPECIES, user_input[ATTR_NAME]).strip()
-            if species_hint:
-                return await self._search_species(species_hint)
-            return await self._save_crop(species=None, image_url=None)
+            species_hint = (
+                user_input.get(ATTR_SPECIES, "").strip()
+                or self._crop_base[ATTR_NAME]
+            )
+            return await self._search_species(species_hint)
 
         return self.async_show_form(
             step_id="add_crop",
@@ -170,17 +184,21 @@ class CropPlannerOptionsFlowHandler(config_entries.OptionsFlow):
 
             pid = user_input.get(ATTR_SPECIES)
             if pid and pid != _NO_SPECIES:
-                image_url: str | None = None
+                self._pending_species = pid
+                self._pending_image_url = None
                 helper = self._opb_helper()
                 if helper:
                     try:
                         opb_result = await helper.openplantbook_get(pid)
                         if opb_result is not None:
-                            image_url = opb_result.get("image_url")
+                            self._pending_image_url = opb_result.get("image_url")
                     except Exception:  # noqa: BLE001
                         LOGGER.warning("OpenPlantbook get failed for pid: %s", pid)
-                return await self._save_crop(species=pid, image_url=image_url)
-            return await self._save_crop(species=None, image_url=None)
+            else:
+                self._pending_species = None
+                self._pending_image_url = None
+
+            return await self.async_step_phases()
 
         schema = vol.Schema(
             {
@@ -205,15 +223,33 @@ class CropPlannerOptionsFlowHandler(config_entries.OptionsFlow):
             },
         )
 
-    async def _save_crop(
-        self, species: str | None, image_url: str | None
+    async def async_step_phases(
+        self, user_input: dict[str, Any] | None = None
     ) -> FlowResult:
+        """Collect optional lifecycle phase date ranges for the crop."""
+        if user_input is not None:
+            phases: dict[str, dict[str, str | None]] = {}
+            for phase in CROP_PHASES:
+                start = user_input.get(f"{phase}_start") or None
+                end = user_input.get(f"{phase}_end") or None
+                if start or end:
+                    phases[phase] = {"start": start, "end": end}
+            return await self._save_crop(phases=phases)
+
+        return self.async_show_form(
+            step_id="phases",
+            data_schema=_phases_schema(),
+            description_placeholders={"name": self._crop_base.get(ATTR_NAME, "")},
+        )
+
+    async def _save_crop(self, phases: dict[str, dict[str, str | None]]) -> FlowResult:
         """Persist the new crop to the config entry and reload."""
         new_crop = {
             "id": str(uuid.uuid4()),
             **self._crop_base,
-            ATTR_SPECIES: species,
-            "image_url": image_url,
+            ATTR_SPECIES: self._pending_species,
+            "image_url": self._pending_image_url,
+            "phases": phases,
         }
         existing_crops = list(self.config_entry.data.get(CONF_CROPS, []))
         existing_crops.append(new_crop)

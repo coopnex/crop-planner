@@ -48,6 +48,7 @@ class Crop(Entity):
         self._quantity = config.quantity
         self._sowing_date = config.sowing_date
         self._species = config.species
+        self._phases = config.phases
         if config.image_url is not None:
             self._attr_entity_picture = config.image_url
         else:
@@ -85,6 +86,10 @@ class Crop(Entity):
             "quantity": self._quantity,
             "sowing_date": self._sowing_date,
             "species": self._species,
+            "phases": {
+                phase: phase_data.to_dict()
+                for phase, phase_data in self._phases.items()
+            },
         }
 
     def update(self) -> None:

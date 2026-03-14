@@ -16,11 +16,12 @@ from homeassistant.helpers import (
 from homeassistant.helpers.entity import async_generate_entity_id
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
 
-from .const import COORDINATOR, DOMAIN
+from .const import CONF_CROPS, COORDINATOR, DOMAIN, PHASE_ICONS
 from .coordinator import (
     CropPlannerConfigEntry,
     CropPlannerCoordinator,
 )
+from .data import create_crop_data
 
 
 async def async_setup_entry(
@@ -43,6 +44,7 @@ class CropPlannerCalendar(CalendarEntity):
         """Initialize the CropPlannerCalendar entity."""
         coordinator: CropPlannerCoordinator = hass.data[DOMAIN][COORDINATOR]
         self._hass = hass
+        self._entry = entry
         self._config_entries = []
         self._unique_id = f"{entry.entry_id}_calendar"
         self._attr_unique_id = self._unique_id
@@ -59,11 +61,39 @@ class CropPlannerCalendar(CalendarEntity):
     async def async_get_events(
         self,
         hass: HomeAssistant,  # noqa: ARG002
-        start_date: datetime.datetime,  # noqa: ARG002
-        end_date: datetime.datetime,  # noqa: ARG002
+        start_date: datetime.datetime,
+        end_date: datetime.datetime,
     ) -> list[CalendarEvent]:
         """Return calendar events within a datetime range."""
-        return []
+        events: list[CalendarEvent] = []
+        window_start = start_date.date()
+        window_end = end_date.date()
+
+        for crop_dict in self._entry.data.get(CONF_CROPS, []):
+            try:
+                crop = create_crop_data(crop_dict)
+            except Exception:  # noqa: BLE001
+                continue
+
+            for phase_name, phase in crop.phases.items():
+                if phase.start is None:
+                    continue
+                phaseEnd = phase.end
+                if phase.end is None:
+                    phaseEnd = phase.start + datetime.timedelta(days=1)
+                if not (window_start <= phase.start <= window_end):
+                    continue
+                icon = PHASE_ICONS.get(phase_name, "📅")
+                summary = f"{icon} {crop.name} — {phase_name.capitalize()}"
+                events.append(
+                    CalendarEvent(
+                        start=phase.start,
+                        end=phaseEnd,
+                        summary=summary,
+                    )
+                )
+
+        return events
 
     def update_registry(self) -> None:
         """Update registry with correct data."""
