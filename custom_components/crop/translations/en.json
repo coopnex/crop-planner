@@ -17,6 +17,11 @@
                 "name": "Generate crop chores"
             }
         },
+        "button": {
+            "generate_chores": {
+                "name": "Generate crop chores"
+            }
+        },
         "todo": {
             "crop_chores": {
                 "name": "Crop chores"

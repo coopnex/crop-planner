@@ -20,7 +20,7 @@ from homeassistant.exceptions import HomeAssistantError
 from homeassistant.helpers import entity_registry as er
 from homeassistant.helpers.entity import async_generate_entity_id
 
-from .const import CONF_CROPS, COORDINATOR, CROP_PHASES, DOMAIN, LOGGER
+from .const import CONF_CROPS, COORDINATOR, CROP_PHASES, CROP_PLATFORM, DOMAIN, LOGGER
 from .todo import CONF_TODOS
 
 if TYPE_CHECKING:
@@ -49,7 +49,8 @@ _SUGGESTION_SCHEMA = vol.Schema(
                     vol.Required("summary"): str,
                     vol.Optional("description"): str,
                     vol.Optional("due_date"): str,
-                    vol.Required("crop_name"): str,
+                    vol.Optional("crop_name"): str,
+                    vol.Optional("crop_entity_id"): str,
                 }
             )
         ]
@@ -63,6 +64,7 @@ def _build_crop_context(hass: HomeAssistant, crops: list[dict[str, Any]]) -> str
     language = hass.config.language
     latitude = hass.config.latitude
     longitude = hass.config.longitude
+    entity_registry = er.async_get(hass)
     lines = [f"* Today is {today}."]
     lines.append(f"* User language: {language}.")
     lines.append(f"* Location: (latitude {latitude:.4f}, longitude {longitude:.4f}).")
@@ -71,6 +73,9 @@ def _build_crop_context(hass: HomeAssistant, crops: list[dict[str, Any]]) -> str
         name = crop.get("name", "Unknown")
         species = crop.get("species") or "unspecified species"
         qty = crop.get("quantity", 1)
+        entity_id = entity_registry.async_get_entity_id(
+            CROP_PLATFORM, DOMAIN, crop["id"]
+        )
         phases: dict[str, dict] = crop.get("phases", {})
         phase_parts = []
         for phase in CROP_PHASES:
@@ -81,7 +86,10 @@ def _build_crop_context(hass: HomeAssistant, crops: list[dict[str, Any]]) -> str
                 if start or end:
                     phase_parts.append(f"{phase}: {start or '?'} → {end or '?'}")
         phase_str = ", ".join(phase_parts) if phase_parts else "no phases set"
-        lines.append(f"  - {name} ({species}), qty {qty}; phases: {phase_str}")
+        entity_str = f", entity_id: {entity_id}" if entity_id else ""
+        lines.append(
+            f"  - {name} ({species}), qty {qty}{entity_str}; phases: {phase_str}"
+        )
     return "\n".join(lines)
 
 
@@ -177,15 +185,16 @@ class GenerateChoresAITask(AITaskEntity):
             summary = task.get("summary", "").strip()
             if not summary:
                 continue
-            existing.append(
-                {
-                    "uid": str(uuid.uuid4()),
-                    "summary": summary,
-                    "status": "needs_action",
-                    "due": task.get("due_date"),
-                    "description": task.get("description"),
-                }
-            )
+            entry: dict = {
+                "uid": str(uuid.uuid4()),
+                "summary": summary,
+                "status": "needs_action",
+                "due": task.get("due_date"),
+                "description": task.get("description"),
+            }
+            if crop_entity_id := task.get("crop_entity_id"):
+                entry["crop_entity_id"] = crop_entity_id
+            existing.append(entry)
             LOGGER.debug("Adding suggested todo: %s", summary)
 
         self._hass.config_entries.async_update_entry(
