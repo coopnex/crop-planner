@@ -57,12 +57,15 @@ _SUGGESTION_SCHEMA = vol.Schema(
 )
 
 
-def _build_crop_context(crops: list[dict[str, Any]]) -> str:
+def _build_crop_context(hass: HomeAssistant, crops: list[dict[str, Any]]) -> str:
     """Serialise current crop state into a human-readable block for the LLM."""
     today = datetime.now(tz=UTC).date().isoformat()
+    language = hass.config.language
+    latitude = hass.config.latitude
+    longitude = hass.config.longitude
     lines = [f"* Today is {today}."]
-    lines.append("* User language: spanish.")
-    lines.append("* Location: near Barcelona (Spain).")
+    lines.append(f"* User language: {language}.")
+    lines.append(f"* Location: (latitude {latitude:.4f}, longitude {longitude:.4f}).")
     lines.append("* Current crops:")
     for crop in crops:
         name = crop.get("name", "Unknown")
@@ -148,8 +151,8 @@ class GenerateChoresAITask(AITaskEntity):
                 "Set up an AI assistant integration (e.g. Google AI, OpenAI) first."
             )
             raise HomeAssistantError(msg)
-
-        crop_context = _build_crop_context(crops)
+        LOGGER.debug("self._hass= %s", self._hass)
+        crop_context = _build_crop_context(self._hass, crops)
         instructions = f"{_DEFAULT_INSTRUCTIONS}\n\nContext:\n{crop_context}"
 
         LOGGER.debug("Delegating crop chore generation to %s", delegate_entity_id)
