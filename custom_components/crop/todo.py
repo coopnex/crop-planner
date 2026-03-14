@@ -16,7 +16,7 @@ from homeassistant.const import Platform
 from homeassistant.helpers import entity_registry as er
 from homeassistant.helpers.entity import async_generate_entity_id
 
-from .const import CONF_TODOS, COORDINATOR, DOMAIN, LOGGER
+from .const import CHORE_CATEGORY_ICONS, CONF_TODOS, COORDINATOR, DOMAIN, LOGGER
 
 if TYPE_CHECKING:
     from homeassistant.core import HomeAssistant
@@ -126,13 +126,16 @@ class CropTodoList(TodoListEntity):
     def _log_completion(self, item: TodoItem) -> None:
         """Fire a logbook entry against the crop entity when a chore is completed."""
         stored = {t["uid"]: t for t in self._entry.data.get(CONF_TODOS, [])}
-        crop_entity_id = stored.get(item.uid, {}).get("crop_entity_id")
+        stored_item = stored.get(item.uid, {})
+        crop_entity_id = stored_item.get("crop_entity_id")
         if not crop_entity_id:
             return
+        category = stored_item.get("category", "")
+        icon = CHORE_CATEGORY_ICONS.get(category, CHORE_CATEGORY_ICONS.get("other", ""))
         async_log_entry(
             self._hass,
             name=crop_entity_id,
-            message=f"Completed chore: {item.summary}",
+            message=f"{icon} Completed chore: {item.summary}",
             domain=DOMAIN,
             entity_id=crop_entity_id,
         )

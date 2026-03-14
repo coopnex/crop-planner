@@ -1,5 +1,6 @@
 """Constants for integration_blueprint."""
 
+from enum import StrEnum
 from logging import Logger, getLogger
 
 LOGGER: Logger = getLogger(__package__)
@@ -39,6 +40,30 @@ PHASE_ICONS = {
     PHASE_GERMINATION: "🌿",
     PHASE_FLOWERING: "🌸",
     PHASE_HARVEST: "🍂",
+}
+
+
+# Chore categories
+class ChoreCategory(StrEnum):
+    """Categories for crop maintenance chores."""
+
+    WATERING = "watering"
+    FERTILISING = "fertilising"
+    PEST_INSPECTION = "pest_inspection"
+    PRUNING = "pruning"
+    HARVESTING = "harvesting"
+    PLANTING = "planting"
+    OTHER = "other"
+
+
+CHORE_CATEGORY_ICONS: dict[str, str] = {
+    ChoreCategory.WATERING: "💧",
+    ChoreCategory.FERTILISING: "🌿",
+    ChoreCategory.PEST_INSPECTION: "🔍",
+    ChoreCategory.PRUNING: "✂️",
+    ChoreCategory.HARVESTING: "🧺",
+    ChoreCategory.PLANTING: "🌱",
+    ChoreCategory.OTHER: "📋",
 }
 
 # OpenPlantBook constants

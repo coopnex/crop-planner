@@ -2,10 +2,8 @@
 
 from __future__ import annotations
 
-import json
 import uuid
 from datetime import UTC, datetime
-from pathlib import Path
 from typing import TYPE_CHECKING, Any
 
 import voluptuous as vol
@@ -23,8 +21,16 @@ from homeassistant.exceptions import HomeAssistantError
 from homeassistant.helpers import entity_registry as er
 from homeassistant.helpers.entity import async_generate_entity_id
 
-from .const import CONF_CROPS, COORDINATOR, CROP_PHASES, CROP_PLATFORM, DOMAIN, LOGGER
-from .todo import CONF_TODOS
+from .const import (
+    CONF_CROPS,
+    CONF_TODOS,
+    COORDINATOR,
+    CROP_PHASES,
+    CROP_PLATFORM,
+    DOMAIN,
+    LOGGER,
+    ChoreCategory,
+)
 
 if TYPE_CHECKING:
     from homeassistant.components.conversation import ChatLog
@@ -58,11 +64,13 @@ _SUGGESTION_SCHEMA = vol.Schema(
                     vol.Optional("due_date"): str,
                     vol.Optional("crop_name"): str,
                     vol.Optional("crop_entity_id"): str,
+                    vol.Optional("category"): vol.In([c.value for c in ChoreCategory]),
                 }
             )
         ],
     }
 )
+
 
 def _build_crop_context(
     hass: HomeAssistant, crops: list[dict[str, Any]], todos: list[dict[str, Any]]
@@ -194,7 +202,6 @@ class GenerateChoresAITask(AITaskEntity):
 
         garden_summary: str = data.get("garden_summary", "")
         if garden_summary:
-            language = self._hass.config.language
             task_lines = "\n".join(
                 f"- {t.get('summary', '')}" for t in tasks if t.get("summary")
             )
@@ -231,6 +238,8 @@ class GenerateChoresAITask(AITaskEntity):
             }
             if crop_entity_id := task.get("crop_entity_id"):
                 entry["crop_entity_id"] = crop_entity_id
+            if category := task.get("category"):
+                entry["category"] = category
             existing.append(entry)
             LOGGER.debug("Adding suggested todo: %s", summary)
 
