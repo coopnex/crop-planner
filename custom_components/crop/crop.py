@@ -9,7 +9,7 @@ quantities, and device/entity registration behavior.
 from typing import TYPE_CHECKING
 
 from homeassistant.components.sensor import SensorDeviceClass
-from homeassistant.const import STATE_OK, EntityCategory
+from homeassistant.const import STATE_OK
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers import (
     entity_registry as er,
@@ -37,7 +37,6 @@ if TYPE_CHECKING:
 class Crop(Entity):
     """Class to represent a crop."""
 
-    _attr_entity_category = EntityCategory.CONFIG
     _attr_device_class = SensorDeviceClass.ENUM
 
     def __init__(self, hass: HomeAssistant, config: CropData) -> None:

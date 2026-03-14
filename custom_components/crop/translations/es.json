@@ -11,7 +11,23 @@
             }
         }
     },
+    "notification": {
+        "chore_suggestions": {
+            "new_tasks_added": "Nuevas tareas añadidas",
+            "open_chore_list": "Abrir lista de tareas"
+        }
+    },
     "entity": {
+        "ai_task": {
+            "generate_chores": {
+                "name": "Generar tareas de cultivo"
+            }
+        },
+        "button": {
+            "generate_chores": {
+                "name": "Generar tareas de cultivo"
+            }
+        },
         "todo": {
             "crop_chores": {
                 "name": "Tareas de cultivo"
@@ -29,7 +45,8 @@
                 "title": "Opciones del Planificador de Cultivos",
                 "menu_options": {
                     "add_crop": "Añadir un nuevo cultivo",
-                    "remove_crop": "Eliminar un cultivo",
+                    "remove_crops": "Eliminar cultivos",
+                    "clear_todos": "Borrar todas las tareas",
                     "finish": "Hecho"
                 }
             },
@@ -50,11 +67,11 @@
                     "refine_search": "Refinar búsqueda"
                 }
             },
-            "remove_crop": {
-                "title": "Eliminar Cultivo",
-                "description": "Selecciona el cultivo que deseas eliminar.",
+            "remove_crops": {
+                "title": "Eliminar Cultivos",
+                "description": "Selecciona uno o más cultivos a eliminar.",
                 "data": {
-                    "crop_id": "Cultivo"
+                    "crop_ids": "Cultivos"
                 }
             },
             "phases": {
@@ -66,6 +83,10 @@
                     "flowering": "Floración",
                     "harvest": "Cosecha"
                 }
+            },
+            "clear_todos": {
+                "title": "Borrar todas las tareas",
+                "description": "Esto eliminará permanentemente todas las tareas de cultivo. Pulsa enviar para confirmar."
             },
             "finish": {
                 "title": "Hecho"

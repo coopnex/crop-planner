@@ -8,6 +8,7 @@ __pycache__
 .venv/
 .claude/
 .local/
+.env
 
 # misc
 .coverage

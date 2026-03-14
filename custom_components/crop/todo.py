@@ -5,6 +5,7 @@ from __future__ import annotations
 import uuid
 from typing import TYPE_CHECKING
 
+from homeassistant.components.logbook import async_log_entry
 from homeassistant.components.todo import (
     TodoItem,
     TodoItemStatus,
@@ -15,15 +16,13 @@ from homeassistant.const import Platform
 from homeassistant.helpers import entity_registry as er
 from homeassistant.helpers.entity import async_generate_entity_id
 
-from .const import COORDINATOR, DOMAIN, LOGGER
+from .const import CONF_TODOS, COORDINATOR, DOMAIN, LOGGER
 
 if TYPE_CHECKING:
     from homeassistant.core import HomeAssistant
     from homeassistant.helpers.entity_platform import AddEntitiesCallback
 
     from .coordinator import CropPlannerConfigEntry, CropPlannerCoordinator
-
-CONF_TODOS = "todos"
 
 
 async def async_setup_entry(
@@ -76,12 +75,19 @@ class CropTodoList(TodoListEntity):
 
     def _persist(self) -> None:
         """Write current todo items back to the config entry."""
+        _KNOWN_KEYS = {"uid", "summary", "status", "due", "description"}  # noqa: N806
+        stored_by_uid = {t["uid"]: t for t in self._entry.data.get(CONF_TODOS, [])}
         self._hass.config_entries.async_update_entry(
             self._entry,
             data={
                 **self._entry.data,
                 CONF_TODOS: [
                     {
+                        **{
+                            k: v
+                            for k, v in stored_by_uid.get(item.uid, {}).items()
+                            if k not in _KNOWN_KEYS
+                        },
                         "uid": item.uid,
                         "summary": item.summary,
                         "status": item.status,
@@ -106,11 +112,31 @@ class CropTodoList(TodoListEntity):
         items = list(self._attr_todo_items or [])
         for i, existing in enumerate(items):
             if existing.uid == item.uid:
+                if (
+                    item.status == TodoItemStatus.COMPLETED
+                    and existing.status != TodoItemStatus.COMPLETED
+                ):
+                    self._log_completion(item)
                 items[i] = item
                 break
         self._attr_todo_items = items
         self._persist()
         self.async_write_ha_state()
+
+    def _log_completion(self, item: TodoItem) -> None:
+        """Fire a logbook entry against the crop entity when a chore is completed."""
+        stored = {t["uid"]: t for t in self._entry.data.get(CONF_TODOS, [])}
+        stored_item = stored.get(item.uid, {})
+        crop_entity_id = stored_item.get("crop_entity_id")
+        if not crop_entity_id:
+            return
+        async_log_entry(
+            self._hass,
+            name=crop_entity_id,
+            message=f"{item.summary}",
+            domain=DOMAIN,
+            entity_id=crop_entity_id,
+        )
 
     async def async_delete_todo_items(self, uids: list[str]) -> None:
         """Remove one or more chores."""

@@ -1,5 +1,6 @@
 """Tests for the Crop Planner options flow (adding crop entities via UI)."""
 
+import uuid
 from unittest.mock import AsyncMock, patch
 
 import pytest
@@ -7,7 +8,7 @@ from homeassistant.data_entry_flow import FlowResultType
 from homeassistant.setup import async_setup_component
 from pytest_homeassistant_custom_component.common import MockConfigEntry
 
-from custom_components.crop.const import CONF_CROPS, DOMAIN
+from custom_components.crop.const import CONF_CROPS, CONF_TODOS, DOMAIN
 
 _TOMATO_PID = "solanum lycopersicum"
 _WILD_TOMATO_PID = "solanum pimpinellifolium"
@@ -57,15 +58,28 @@ async def test_options_flow_add_crop_shows_form(hass, loaded_entry):
 
 
 async def test_options_flow_add_crop_no_species_creates_entity(hass, loaded_entry):
-    """Submitting without a species skips OPB and creates the crop directly."""
+    """Submitting without OPB credentials shows select_species with only None, then phases."""  # noqa: E501
     result = await hass.config_entries.options.async_init(loaded_entry.entry_id)
     result = await hass.config_entries.options.async_configure(
         result["flow_id"], {"next_step_id": "add_crop"}
     )
+    # Add crop form — no species hint, no OPB credentials configured
     result = await hass.config_entries.options.async_configure(
         result["flow_id"],
-        {"name": "Tomato", "quantity": 4, "sowing_date": "2026-03-01"},
+        {"name": "Tomato", "quantity": 4},
     )
+    assert result["type"] is FlowResultType.FORM
+    assert result["step_id"] == "select_species"
+
+    # Select "— None —"
+    result = await hass.config_entries.options.async_configure(
+        result["flow_id"], {"species": "__none__"}
+    )
+    assert result["type"] is FlowResultType.FORM
+    assert result["step_id"] == "phases"
+
+    # Submit phases (empty — all optional)
+    result = await hass.config_entries.options.async_configure(result["flow_id"], {})
     await hass.async_block_till_done()
 
     assert result["type"] is FlowResultType.CREATE_ENTRY
@@ -80,15 +94,17 @@ async def test_options_flow_add_crop_no_species_creates_entity(hass, loaded_entr
 async def test_options_flow_species_hint_shows_select_form(hass, loaded_entry):
     """Entering a species hint triggers OPB search and shows the select step."""
     search_result = {
-        "search_result": {
-            _TOMATO_PID: {"display_pid": "Tomato", "pid": _TOMATO_PID},
-            _WILD_TOMATO_PID: {"display_pid": "Wild Tomato", "pid": _WILD_TOMATO_PID},
-        }
+        "results": [
+            {"pid": _TOMATO_PID, "display_pid": "Tomato"},
+            {"pid": _WILD_TOMATO_PID, "display_pid": "Wild Tomato"},
+        ]
     }
-    with patch("custom_components.crop.config_flow.OpenPlantbookHelper") as mock_cls:
-        mock_cls.return_value.openplantbook_search = AsyncMock(
-            return_value=search_result
-        )
+    mock_helper = AsyncMock()
+    mock_helper.openplantbook_search = AsyncMock(return_value=search_result)
+    with patch(
+        "custom_components.crop.config_flow.CropPlannerOptionsFlowHandler._opb_helper",
+        return_value=mock_helper,
+    ):
         result = await hass.config_entries.options.async_init(loaded_entry.entry_id)
         result = await hass.config_entries.options.async_configure(
             result["flow_id"], {"next_step_id": "add_crop"}
@@ -98,7 +114,6 @@ async def test_options_flow_species_hint_shows_select_form(hass, loaded_entry):
             {
                 "name": "Tomato",
                 "quantity": 2,
-                "sowing_date": "2026-03-01",
                 "species": "tomato",
             },
         )
@@ -116,18 +131,19 @@ async def test_options_flow_select_species_creates_entity_with_image(
 ):
     """Selecting a species fetches OPB details and stores image_url."""
     search_result = {
-        "search_result": {
-            _TOMATO_PID: {"display_pid": "Tomato", "pid": _TOMATO_PID},
-        }
+        "results": [
+            {"pid": _TOMATO_PID, "display_pid": "Tomato"},
+        ]
     }
     opb_detail = {"image_url": "https://example.com/tomato.png"}
 
-    with patch("custom_components.crop.config_flow.OpenPlantbookHelper") as mock_cls:
-        mock_cls.return_value.openplantbook_search = AsyncMock(
-            return_value=search_result
-        )
-        mock_cls.return_value.openplantbook_get = AsyncMock(return_value=opb_detail)
-
+    mock_helper = AsyncMock()
+    mock_helper.openplantbook_search = AsyncMock(return_value=search_result)
+    mock_helper.openplantbook_get = AsyncMock(return_value=opb_detail)
+    with patch(
+        "custom_components.crop.config_flow.CropPlannerOptionsFlowHandler._opb_helper",
+        return_value=mock_helper,
+    ):
         result = await hass.config_entries.options.async_init(loaded_entry.entry_id)
         result = await hass.config_entries.options.async_configure(
             result["flow_id"], {"next_step_id": "add_crop"}
@@ -137,12 +153,15 @@ async def test_options_flow_select_species_creates_entity_with_image(
             {
                 "name": "Tomato",
                 "quantity": 1,
-                "sowing_date": "2026-03-01",
                 "species": "tomato",
             },
         )
         result = await hass.config_entries.options.async_configure(
             result["flow_id"], {"species": _TOMATO_PID}
+        )
+        assert result["step_id"] == "phases"
+        result = await hass.config_entries.options.async_configure(
+            result["flow_id"], {}
         )
         await hass.async_block_till_done()
 
@@ -156,14 +175,16 @@ async def test_options_flow_select_species_creates_entity_with_image(
 async def test_options_flow_select_none_species(hass, loaded_entry):
     """Selecting '— None —' creates the crop without a species."""
     search_result = {
-        "search_result": {
-            _TOMATO_PID: {"display_pid": "Tomato", "pid": _TOMATO_PID},
-        }
+        "results": [
+            {"pid": _TOMATO_PID, "display_pid": "Tomato"},
+        ]
     }
-    with patch("custom_components.crop.config_flow.OpenPlantbookHelper") as mock_cls:
-        mock_cls.return_value.openplantbook_search = AsyncMock(
-            return_value=search_result
-        )
+    mock_helper = AsyncMock()
+    mock_helper.openplantbook_search = AsyncMock(return_value=search_result)
+    with patch(
+        "custom_components.crop.config_flow.CropPlannerOptionsFlowHandler._opb_helper",
+        return_value=mock_helper,
+    ):
         result = await hass.config_entries.options.async_init(loaded_entry.entry_id)
         result = await hass.config_entries.options.async_configure(
             result["flow_id"], {"next_step_id": "add_crop"}
@@ -173,12 +194,15 @@ async def test_options_flow_select_none_species(hass, loaded_entry):
             {
                 "name": "Basil",
                 "quantity": 1,
-                "sowing_date": "2026-03-01",
                 "species": "basil",
             },
         )
         result = await hass.config_entries.options.async_configure(
             result["flow_id"], {"species": "__none__"}
+        )
+        assert result["step_id"] == "phases"
+        result = await hass.config_entries.options.async_configure(
+            result["flow_id"], {}
         )
         await hass.async_block_till_done()
 
@@ -203,7 +227,6 @@ async def test_options_flow_search_fails_still_shows_select(hass, loaded_entry):
             {
                 "name": "Pepper",
                 "quantity": 1,
-                "sowing_date": "2026-03-01",
                 "species": "pepper",
             },
         )
@@ -213,3 +236,155 @@ async def test_options_flow_search_fails_still_shows_select(hass, loaded_entry):
     options = result["data_schema"].schema["species"].config["options"]
     assert len(options) == 1
     assert options[0]["value"] == "__none__"
+
+
+# ---------------------------------------------------------------------------
+# Crop name capitalisation
+# ---------------------------------------------------------------------------
+
+
+async def test_add_crop_name_is_capitalised(hass, loaded_entry):
+    """Crop names are stored with the first letter capitalised."""
+    result = await hass.config_entries.options.async_init(loaded_entry.entry_id)
+    result = await hass.config_entries.options.async_configure(
+        result["flow_id"], {"next_step_id": "add_crop"}
+    )
+    result = await hass.config_entries.options.async_configure(
+        result["flow_id"], {"name": "cherry tomato", "quantity": 1}
+    )
+    # select_species → pick none
+    result = await hass.config_entries.options.async_configure(
+        result["flow_id"], {"species": "__none__"}
+    )
+    # phases → submit empty
+    result = await hass.config_entries.options.async_configure(result["flow_id"], {})
+    await hass.async_block_till_done()
+
+    assert result["type"] is FlowResultType.CREATE_ENTRY
+    crop = loaded_entry.data[CONF_CROPS][0]
+    assert crop["name"] == "Cherry tomato"
+
+
+# ---------------------------------------------------------------------------
+# Remove crops (multi-select)
+# ---------------------------------------------------------------------------
+
+
+@pytest.fixture
+async def entry_with_two_crops(hass):
+    """Config entry pre-loaded with two crops."""
+    entry = MockConfigEntry(
+        domain=DOMAIN,
+        title="Crop Planner",
+        data={
+            CONF_CROPS: [
+                {"id": "id-1", "name": "Tomato", "quantity": 1, "phases": {}},
+                {"id": "id-2", "name": "Basil", "quantity": 2, "phases": {}},
+            ]
+        },
+        unique_id="crop",
+    )
+    entry.add_to_hass(hass)
+    assert await async_setup_component(hass, DOMAIN, {})
+    await hass.async_block_till_done()
+    return entry
+
+
+async def test_remove_crops_shows_multi_select(hass, entry_with_two_crops):
+    """remove_crops step shows a multi-select with all existing crops."""
+    result = await hass.config_entries.options.async_init(entry_with_two_crops.entry_id)
+    result = await hass.config_entries.options.async_configure(
+        result["flow_id"], {"next_step_id": "remove_crops"}
+    )
+    assert result["type"] is FlowResultType.FORM
+    assert result["step_id"] == "remove_crops"
+    options = result["data_schema"].schema["crop_ids"].config["options"]
+    labels = [o["label"] for o in options]
+    assert "Tomato" in labels
+    assert "Basil" in labels
+
+
+async def test_remove_single_crop(hass, entry_with_two_crops):
+    """Selecting one crop removes only that crop."""
+    result = await hass.config_entries.options.async_init(entry_with_two_crops.entry_id)
+    result = await hass.config_entries.options.async_configure(
+        result["flow_id"], {"next_step_id": "remove_crops"}
+    )
+    result = await hass.config_entries.options.async_configure(
+        result["flow_id"], {"crop_ids": ["id-1"]}
+    )
+    await hass.async_block_till_done()
+
+    assert result["type"] is FlowResultType.CREATE_ENTRY
+    crops = entry_with_two_crops.data[CONF_CROPS]
+    assert len(crops) == 1
+    assert crops[0]["id"] == "id-2"
+
+
+async def test_remove_multiple_crops(hass, entry_with_two_crops):
+    """Selecting both crops removes all of them."""
+    result = await hass.config_entries.options.async_init(entry_with_two_crops.entry_id)
+    result = await hass.config_entries.options.async_configure(
+        result["flow_id"], {"next_step_id": "remove_crops"}
+    )
+    result = await hass.config_entries.options.async_configure(
+        result["flow_id"], {"crop_ids": ["id-1", "id-2"]}
+    )
+    await hass.async_block_till_done()
+
+    assert result["type"] is FlowResultType.CREATE_ENTRY
+    assert entry_with_two_crops.data[CONF_CROPS] == []
+
+
+# ---------------------------------------------------------------------------
+# Clear todos
+# ---------------------------------------------------------------------------
+
+
+@pytest.fixture
+async def entry_with_todos(hass):
+    """Config entry pre-loaded with one todo item."""
+    entry = MockConfigEntry(
+        domain=DOMAIN,
+        title="Crop Planner",
+        data={
+            CONF_CROPS: [],
+            CONF_TODOS: [
+                {
+                    "uid": str(uuid.uuid4()),
+                    "summary": "Water plants",
+                    "status": "needs_action",
+                    "due": None,
+                    "description": None,
+                }
+            ],
+        },
+        unique_id="crop",
+    )
+    entry.add_to_hass(hass)
+    assert await async_setup_component(hass, DOMAIN, {})
+    await hass.async_block_till_done()
+    return entry
+
+
+async def test_clear_todos_shows_confirmation_form(hass, entry_with_todos):
+    """clear_todos step shows a confirmation form."""
+    result = await hass.config_entries.options.async_init(entry_with_todos.entry_id)
+    result = await hass.config_entries.options.async_configure(
+        result["flow_id"], {"next_step_id": "clear_todos"}
+    )
+    assert result["type"] is FlowResultType.FORM
+    assert result["step_id"] == "clear_todos"
+
+
+async def test_clear_todos_removes_all_items(hass, entry_with_todos):
+    """Confirming clear_todos empties the todos list."""
+    result = await hass.config_entries.options.async_init(entry_with_todos.entry_id)
+    result = await hass.config_entries.options.async_configure(
+        result["flow_id"], {"next_step_id": "clear_todos"}
+    )
+    result = await hass.config_entries.options.async_configure(result["flow_id"], {})
+    await hass.async_block_till_done()
+
+    assert result["type"] is FlowResultType.CREATE_ENTRY
+    assert entry_with_todos.data.get("todos", []) == []

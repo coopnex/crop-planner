@@ -31,7 +31,6 @@ async def test_setup_creates_crop_entities(hass):
                     "id": "test-id-1",
                     "name": "Tomato",
                     "quantity": 3,
-                    "sowing_date": "2024-04-15",
                 }
             ]
         },
@@ -45,7 +44,6 @@ async def test_setup_creates_crop_entities(hass):
     state = hass.states.get("crop.tomato")
     assert state is not None
     assert state.attributes["quantity"] == 3
-    assert state.attributes["sowing_date"] == "2024-04-15"
     assert state.attributes["species"] is None
 
 
@@ -60,7 +58,6 @@ async def test_setup_crop_entity_with_species(hass):
                     "id": "test-id-2",
                     "name": "Basil",
                     "quantity": 1,
-                    "sowing_date": "2024-05-01",
                     "species": "ocimum basilicum",
                     "image_url": "https://example.com/basil.jpg",
                 }
