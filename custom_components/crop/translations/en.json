@@ -12,6 +12,11 @@
         }
     },
     "entity": {
+        "ai_task": {
+            "generate_chores": {
+                "name": "Generate crop chores"
+            }
+        },
         "todo": {
             "crop_chores": {
                 "name": "Crop chores"

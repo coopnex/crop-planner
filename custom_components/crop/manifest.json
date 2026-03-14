@@ -2,6 +2,7 @@
     "domain": "crop",
     "name": "Crop Planner",
     "after_dependencies": [
+      "ai_task",
       "recorder",
       "integration",
       "statistics",

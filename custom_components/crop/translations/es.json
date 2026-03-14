@@ -12,6 +12,11 @@
         }
     },
     "entity": {
+        "ai_task": {
+            "generate_chores": {
+                "name": "Generar tareas de cultivo"
+            }
+        },
         "todo": {
             "crop_chores": {
                 "name": "Tareas de cultivo"
