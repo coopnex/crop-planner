@@ -160,6 +160,10 @@ class CropPlannerOptionsFlowHandler(config_entries.OptionsFlow):
     ) -> FlowResult:
         """Let the user pick a species from OpenPlantbook search results."""
         if user_input is not None:
+            refine = user_input.get("refine_search", "").strip()
+            if refine:
+                return await self._search_species(refine)
+
             pid = user_input.get(ATTR_SPECIES)
             if pid and pid != _NO_SPECIES:
                 image_url: str | None = None
@@ -181,6 +185,7 @@ class CropPlannerOptionsFlowHandler(config_entries.OptionsFlow):
                         selector.SelectSelectorConfig(options=self._species_options)
                     )
                 ),
+                vol.Optional("refine_search"): selector.TextSelector(),
             }
         )
         return self.async_show_form(

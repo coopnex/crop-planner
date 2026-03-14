@@ -28,9 +28,10 @@
             },
             "select_species": {
                 "title": "Select Species",
-                "description": "Choose the species for **{name}** from the OpenPlantbook results.",
+                "description": "Choose the species for **{name}** from the OpenPlantbook results, or enter a new search term below to refine.",
                 "data": {
-                    "species": "Species"
+                    "species": "Species",
+                    "refine_search": "Refine search"
                 }
             },
             "finish": {
