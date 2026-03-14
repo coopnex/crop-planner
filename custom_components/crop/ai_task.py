@@ -73,7 +73,7 @@ _SUGGESTION_SCHEMA = vol.Schema(
 )
 
 
-def _build_crop_context(
+def _build_context(
     hass: HomeAssistant, crops: list[dict[str, Any]], todos: list[dict[str, Any]]
 ) -> str:
     """Serialise current crop state into a human-readable block for the LLM."""
@@ -85,35 +85,42 @@ def _build_crop_context(
     lines = [f"* Today is {today}."]
     lines.append(f"* User language: {language}.")
     lines.append(f"* Location: (latitude {latitude:.4f}, longitude {longitude:.4f}).")
-    lines.append("* Current crops:")
-    for crop in crops:
-        name = crop.get("name", "Unknown")
-        species = crop.get("species") or "unspecified species"
-        qty = crop.get("quantity", 1)
-        entity_id = entity_registry.async_get_entity_id(
-            CROP_PLATFORM, DOMAIN, crop["id"]
-        )
-        phases: dict[str, dict] = crop.get("phases", {})
-        phase_parts = []
-        for phase in CROP_PHASES:
-            if phase in phases:
-                p = phases[phase]
-                start = p.get("start", "")
-                end = p.get("end", "")
-                if start or end:
-                    phase_parts.append(f"{phase}: {start or '?'} → {end or '?'}")
-        phase_str = ", ".join(phase_parts) if phase_parts else "no phases set"
-        entity_str = f", entity_id: {entity_id}" if entity_id else ""
-        lines.append(
-            f"  - {name} ({species}), qty {qty}{entity_str}; phases: {phase_str}"
-        )
-    lines.append("* Current todos:")
-    for todo in todos:
-        summary = todo.get("summary")
-        description = f"({todo.get('description') or ''})"
-        lines.append(f"  - {summary} {description}")
+    if crops:
+        lines.append("* Current crops:")
+        for crop in crops:
+            entity_id = entity_registry.async_get_entity_id(
+                CROP_PLATFORM, DOMAIN, crop["id"]
+            )
+            line = _build_crop_context(crop, entity_id)
+            lines.append(f"  - {line}")
+    if todos:
+        lines.append("* Current todos:")
+        for todo in todos:
+            summary = todo.get("summary")
+            description = f"({todo.get('description') or ''})"
+            lines.append(f"  - {summary} {description}")
 
     return "\n".join(lines)
+
+
+def _build_crop_context(crop: dict[str, Any], entity_id: str | None = None) -> str:
+    name = crop.get("name", "Unknown")
+    species = crop.get("species") or None
+    qty = crop.get("quantity", 1)
+
+    phases: dict[str, dict] = crop.get("phases", {})
+    phase_parts = []
+    for phase in CROP_PHASES:
+        if phase in phases:
+            p = phases[phase]
+            start = p.get("start", "")
+            end = p.get("end", "")
+            if start or end:
+                phase_parts.append(f"{phase}: {start or '?'} → {end or '?'}")
+    species_str = f" ({species})" if species else ""
+    entity_str = f"; entity_id: {entity_id}" if entity_id else ""
+    phase_str = f"; phases: {', '.join(phase_parts)}" if phase_parts else ""
+    return f"{name}{species_str}: qty {qty}{entity_str}{phase_str}"
 
 
 async def async_setup_entry(
@@ -172,9 +179,6 @@ class GenerateChoresAITask(AITaskEntity):
         """Enrich the task with crop context, delegate to an LLM, and add todos."""
         crops: list[dict] = list(self._entry.data.get(CONF_CROPS, []))
         todos: list[dict] = list(self._entry.data.get(CONF_TODOS, []))
-        if not crops:
-            msg = "No crops are configured in the Crop Planner — nothing to suggest."
-            raise HomeAssistantError(msg)
 
         delegate_entity_id = self._find_delegate_entity_id()
         if delegate_entity_id is None:
@@ -184,7 +188,7 @@ class GenerateChoresAITask(AITaskEntity):
             )
             raise HomeAssistantError(msg)
         LOGGER.debug("self._hass= %s", self._hass)
-        crop_context = _build_crop_context(self._hass, crops, todos)
+        crop_context = _build_context(self._hass, crops, todos)
         instructions = f"{_DEFAULT_INSTRUCTIONS}\n\nContext:\n{crop_context}"
 
         LOGGER.debug("Delegating crop chore generation to %s", delegate_entity_id)
