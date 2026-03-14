@@ -11,6 +11,18 @@
             }
         }
     },
+    "entity": {
+        "todo": {
+            "crop_chores": {
+                "name": "Tareas de cultivo"
+            }
+        },
+        "calendar": {
+            "crop_calendar": {
+                "name": "Calendario de cultivo"
+            }
+        }
+    },
     "options": {
         "step": {
             "init": {

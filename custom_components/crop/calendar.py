@@ -37,8 +37,8 @@ async def async_setup_entry(
 class CropPlannerCalendar(CalendarEntity):
     """Representation of a Sensor."""
 
-    _attr_name = "Crop Calendar"
-    attr_has_entity_name = True
+    _attr_has_entity_name = True
+    _attr_translation_key = "crop_calendar"
 
     def __init__(self, hass: HomeAssistant, entry: CropPlannerConfigEntry) -> None:
         """Initialize the CropPlannerCalendar entity."""
@@ -50,7 +50,7 @@ class CropPlannerCalendar(CalendarEntity):
         self._attr_unique_id = self._unique_id
         self._device_id = coordinator.device_id
         self.entity_id = async_generate_entity_id(
-            f"{Platform.CALENDAR}.{{}}", self._attr_name, current_ids={}
+            f"{Platform.CALENDAR}.{{}}", "Crop calendar", current_ids={}
         )
 
     @property

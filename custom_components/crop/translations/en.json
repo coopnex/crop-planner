@@ -11,6 +11,18 @@
             }
         }
     },
+    "entity": {
+        "todo": {
+            "crop_chores": {
+                "name": "Crop chores"
+            }
+        },
+        "calendar": {
+            "crop_calendar": {
+              "name": "Crop calendar"
+            }
+        }
+    },
     "options": {
         "step": {
             "init": {
