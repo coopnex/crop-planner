@@ -4,12 +4,9 @@ from __future__ import annotations
 
 from dataclasses import dataclass, field
 from datetime import date
-from typing import TYPE_CHECKING, Any
+from typing import Any
 
 from .const import CROP_PHASES, LOGGER
-
-if TYPE_CHECKING:
-    pass
 
 
 def _parse_date(value: str | None) -> date | None:

@@ -72,15 +72,15 @@ class CropPlannerCalendar(CalendarEntity):
         for crop_dict in self._entry.data.get(CONF_CROPS, []):
             try:
                 crop = create_crop_data(crop_dict)
-            except Exception:  # noqa: BLE001
+            except Exception:  # noqa: BLE001, S112
                 continue
 
             for phase_name, phase in crop.phases.items():
                 if phase.start is None:
                     continue
-                phaseEnd = phase.end
+                phase_end = phase.end
                 if phase.end is None:
-                    phaseEnd = phase.start + datetime.timedelta(days=1)
+                    phase_end = phase.start + datetime.timedelta(days=1)
                 if not (window_start <= phase.start <= window_end):
                     continue
                 icon = PHASE_ICONS.get(phase_name, "📅")
@@ -88,7 +88,7 @@ class CropPlannerCalendar(CalendarEntity):
                 events.append(
                     CalendarEvent(
                         start=phase.start,
-                        end=phaseEnd,
+                        end=phase_end,
                         summary=summary,
                     )
                 )

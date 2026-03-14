@@ -14,13 +14,14 @@ from homeassistant.components.todo import (
 from homeassistant.const import Platform
 from homeassistant.helpers import entity_registry as er
 from homeassistant.helpers.entity import async_generate_entity_id
-from homeassistant.helpers.entity_platform import AddEntitiesCallback
 
-from .const import CONF_CROPS, COORDINATOR, DOMAIN, LOGGER
-from .coordinator import CropPlannerConfigEntry, CropPlannerCoordinator
+from .const import COORDINATOR, DOMAIN, LOGGER
 
 if TYPE_CHECKING:
     from homeassistant.core import HomeAssistant
+    from homeassistant.helpers.entity_platform import AddEntitiesCallback
+
+    from .coordinator import CropPlannerConfigEntry, CropPlannerCoordinator
 
 CONF_TODOS = "todos"
 
@@ -47,7 +48,6 @@ class CropTodoList(TodoListEntity):
     )
     _attr_has_entity_name = True
     _attr_translation_key = "crop_chores"
-
 
     def __init__(self, hass: HomeAssistant, entry: CropPlannerConfigEntry) -> None:
         """Initialise the todo list entity."""
@@ -96,7 +96,7 @@ class CropTodoList(TodoListEntity):
     async def async_create_todo_item(self, item: TodoItem) -> None:
         """Add a new chore."""
         item.uid = str(uuid.uuid4())
-        self._attr_todo_items = list(self._attr_todo_items or []) + [item]
+        self._attr_todo_items = [*list(self._attr_todo_items or []), item]
         self._persist()
         self.async_write_ha_state()
         LOGGER.debug("Created todo item: %s", item.summary)

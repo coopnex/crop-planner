@@ -16,7 +16,6 @@ from homeassistant.helpers.service import async_register_admin_service
 from .const import (
     ATTR_NAME,
     ATTR_QUANTITY,
-    ATTR_SOWING_DATE,
     ATTR_SPECIES,
     COORDINATOR,
     DOMAIN,

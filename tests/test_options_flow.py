@@ -85,9 +85,7 @@ async def test_options_flow_species_hint_shows_select_form(hass, loaded_entry):
             _WILD_TOMATO_PID: {"display_pid": "Wild Tomato", "pid": _WILD_TOMATO_PID},
         }
     }
-    with patch(
-        "custom_components.crop.config_flow.OpenPlantbookHelper"
-    ) as mock_cls:
+    with patch("custom_components.crop.config_flow.OpenPlantbookHelper") as mock_cls:
         mock_cls.return_value.openplantbook_search = AsyncMock(
             return_value=search_result
         )
@@ -124,9 +122,7 @@ async def test_options_flow_select_species_creates_entity_with_image(
     }
     opb_detail = {"image_url": "https://example.com/tomato.png"}
 
-    with patch(
-        "custom_components.crop.config_flow.OpenPlantbookHelper"
-    ) as mock_cls:
+    with patch("custom_components.crop.config_flow.OpenPlantbookHelper") as mock_cls:
         mock_cls.return_value.openplantbook_search = AsyncMock(
             return_value=search_result
         )
@@ -164,9 +160,7 @@ async def test_options_flow_select_none_species(hass, loaded_entry):
             _TOMATO_PID: {"display_pid": "Tomato", "pid": _TOMATO_PID},
         }
     }
-    with patch(
-        "custom_components.crop.config_flow.OpenPlantbookHelper"
-    ) as mock_cls:
+    with patch("custom_components.crop.config_flow.OpenPlantbookHelper") as mock_cls:
         mock_cls.return_value.openplantbook_search = AsyncMock(
             return_value=search_result
         )
@@ -196,9 +190,7 @@ async def test_options_flow_select_none_species(hass, loaded_entry):
 
 async def test_options_flow_search_fails_still_shows_select(hass, loaded_entry):
     """If OPB search raises, the select step still appears with only 'None'."""
-    with patch(
-        "custom_components.crop.config_flow.OpenPlantbookHelper"
-    ) as mock_cls:
+    with patch("custom_components.crop.config_flow.OpenPlantbookHelper") as mock_cls:
         mock_cls.return_value.openplantbook_search = AsyncMock(
             side_effect=Exception("OPB down")
         )

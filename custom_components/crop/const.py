@@ -42,6 +42,6 @@ PHASE_ICONS = {
 
 # OpenPlantBook constants
 CONF_CLIENT_ID = "client_id"
-CONF_CLIENT_SECRET = "client_secret"
+CONF_CLIENT_SECRET = "client_secret"  # noqa: S105
 OPB_PID = "pid"
 OPB_DISPLAY_PID = "display_pid"

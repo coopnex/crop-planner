@@ -16,19 +16,17 @@ from slugify import slugify
 from .const import (
     ATTR_NAME,
     ATTR_QUANTITY,
-    ATTR_SOWING_DATE,
     ATTR_SPECIES,
     CONF_CLIENT_ID,
     CONF_CLIENT_SECRET,
     CONF_CROPS,
     CROP_PHASES,
-    PHASE_SOWING,
     CROP_PLANNER,
     DOMAIN,
     LOGGER,
     OPB_DISPLAY_PID,
     OPB_PID,
-    PHASE_ICONS,
+    PHASE_SOWING,
 )
 from .openplantbook import OpenPlantbookHelper
 
@@ -155,8 +153,7 @@ class CropPlannerOptionsFlowHandler(config_entries.OptionsFlow):
                 ATTR_QUANTITY: user_input.get(ATTR_QUANTITY, 1),
             }
             species_hint = (
-                user_input.get(ATTR_SPECIES, "").strip()
-                or self._crop_base[ATTR_NAME]
+                user_input.get(ATTR_SPECIES, "").strip() or self._crop_base[ATTR_NAME]
             )
             return await self._search_species(species_hint)
 
@@ -257,7 +254,7 @@ class CropPlannerOptionsFlowHandler(config_entries.OptionsFlow):
             phases: dict[str, dict[str, str | None]] = {}
             for phase in CROP_PHASES:
                 start = user_input.get(f"{phase}") or None
-                if(phase == PHASE_SOWING and start == None):
+                if phase == PHASE_SOWING and start is None:
                     start = datetime.now(tz=UTC).date().isoformat()
                 if start:
                     phases[phase] = {"start": start}
