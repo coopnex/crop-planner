@@ -21,11 +21,17 @@
         "ai_task": {
             "generate_chores": {
                 "name": "Sugerir tareas de cultivo"
+            },
+            "enrich_crop_data": {
+                "name": "Rellenar campos de cultivo faltantes"
             }
         },
         "button": {
             "generate_chores": {
                 "name": "Sugerir tareas"
+            },
+            "enrich_crop_data": {
+                "name": "Rellenar campos faltantes"
             }
         },
         "todo": {

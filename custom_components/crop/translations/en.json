@@ -21,11 +21,17 @@
         "ai_task": {
             "generate_chores": {
                 "name": "Suggest crop chores"
+            },
+            "enrich_crop_data": {
+                "name": "Fill missing crop fields"
             }
         },
         "button": {
             "generate_chores": {
                 "name": "Suggest chores"
+            },
+            "enrich_crop_data": {
+                "name": "Fill missing crop fields"
             }
         },
         "todo": {
