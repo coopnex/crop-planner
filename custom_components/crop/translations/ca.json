@@ -21,11 +21,17 @@
         "ai_task": {
             "generate_chores": {
                 "name": "Suggerir tasques de l'hort"
+            },
+            "enrich_crop_data": {
+                "name": "Emplenar camps de cultiu que falten"
             }
         },
         "button": {
             "generate_chores": {
                 "name": "Suggerir tasques"
+            },
+            "enrich_crop_data": {
+                "name": "Emplenar camps que falten"
             }
         },
         "todo": {
