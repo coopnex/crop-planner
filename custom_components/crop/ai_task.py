@@ -135,7 +135,8 @@ _FILL_FIELDS_INSTRUCTIONS = (
     "- For each phase (sowing, germination, flowering, harvest) that lacks a start "
     "  or end date, estimate sensible dates based on the species, climate of the "
     "  location, and any existing dates already recorded for that crop.\n"
-    "- Only fill in fields that are genuinely missing; never overwrite existing values.\n"
+    "- Only fill in fields that are genuinely missing; "
+    "never overwrite existing values.\n"
     "- Return ONLY crops that actually need changes; omit crops that are already "
     "  complete.\n"
     "- Express all dates as ISO-8601 strings (YYYY-MM-DD)."
@@ -170,7 +171,7 @@ _FILL_FIELDS_SCHEMA = vol.Schema(
 
 
 def _find_delegate_entity_id(hass: HomeAssistant) -> str | None:
-    """Return an ai_task entity that supports GENERATE_DATA, excluding our own entities."""
+    """Return an ai_task entity supporting GENERATE_DATA, excluding our own entities."""
     entity_registry = er.async_get(hass)
     our_entity_ids = {
         entry.entity_id
@@ -360,7 +361,10 @@ class FillCropFieldsAITask(AITaskEntity):
         incomplete = [c for c in crops if self._crop_is_incomplete(c)]
         if not incomplete:
             LOGGER.debug("All crops are already complete; nothing to fill.")
-            return GenDataTaskResult(conversation_id=None, data={"crops": [], "summary": "All crops are already complete."})
+            return GenDataTaskResult(
+                conversation_id=None,
+                data={"crops": [], "summary": "All crops are already complete."},
+            )
 
         delegate_entity_id = _find_delegate_entity_id(self._hass)
         if delegate_entity_id is None:
@@ -386,7 +390,9 @@ class FillCropFieldsAITask(AITaskEntity):
         data: dict = result.data or {}
         suggestions: list[dict] = data.get("crops", [])
         summary: str = data.get("summary", "")
-        LOGGER.debug("Fill-fields suggestions received (%d): %s", len(suggestions), suggestions)
+        LOGGER.debug(
+            "Fill-fields suggestions received (%d): %s", len(suggestions), suggestions
+        )
 
         if suggestions:
             updated_count = self._merge_suggestions(crops, suggestions)
@@ -398,7 +404,7 @@ class FillCropFieldsAITask(AITaskEntity):
             async_create(
                 self._hass,
                 message=summary,
-                title="🌱 Crop Planner – Crop data enriched",
+                title="🌱 Crop Planner - Crop data enriched",
                 notification_id=f"{DOMAIN}_enrich_crop_data",
             )
 
@@ -416,12 +422,35 @@ class FillCropFieldsAITask(AITaskEntity):
                 return True
         return False
 
+    @staticmethod
+    def _merge_phases(crop: dict[str, Any], suggested_phases: dict[str, dict]) -> bool:
+        """Fill missing phase dates from suggestions. Returns True if any changed."""
+        existing_phases: dict[str, dict] = crop.get("phases") or {}
+        crop["phases"] = existing_phases
+        changed = False
+        for phase, phase_data in suggested_phases.items():
+            if phase not in CROP_PHASES:
+                continue
+            existing_phase = existing_phases.get(phase) or {}
+            existing_phases[phase] = existing_phase
+            for key in ("start", "end"):
+                if not existing_phase.get(key) and phase_data.get(key):
+                    existing_phase[key] = phase_data[key]
+                    changed = True
+                    LOGGER.debug(
+                        "Set %s.%s.%s = %s",
+                        crop.get("name"),
+                        phase,
+                        key,
+                        phase_data[key],
+                    )
+        return changed
+
     def _merge_suggestions(
         self, crops: list[dict[str, Any]], suggestions: list[dict[str, Any]]
     ) -> int:
         """Merge AI suggestions into the crops list; never overwrite existing data."""
         entity_registry = er.async_get(self._hass)
-        # Build a map from entity_id → crop UUID using the entity registry.
         suggestions_by_crop_id: dict[str, dict] = {}
         for suggestion in suggestions:
             entity_id = suggestion.get("entity_id")
@@ -431,7 +460,7 @@ class FillCropFieldsAITask(AITaskEntity):
             entry = entity_registry.async_get(entity_id)
             if entry and entry.unique_id:
                 suggestions_by_crop_id[entry.unique_id] = suggestion
-                LOGGER.debug("Mapped entity_id %s → crop id %s", entity_id, entry.unique_id)
+                LOGGER.debug("Mapped %s -> crop id %s", entity_id, entry.unique_id)
             else:
                 LOGGER.warning("Could not resolve entity_id %s in registry", entity_id)
 
@@ -441,25 +470,11 @@ class FillCropFieldsAITask(AITaskEntity):
             if suggestion is None:
                 continue
             changed = False
-            # Fill species only if missing.
             if not crop.get("species") and suggestion.get("species"):
                 crop["species"] = suggestion["species"]
                 changed = True
-            # Fill phase dates only where missing.
-            suggested_phases: dict[str, dict] = suggestion.get("phases", {})
-            # crop dicts from entry.data are plain dicts — safe to mutate.
-            existing_phases: dict[str, dict] = crop.get("phases") or {}
-            crop["phases"] = existing_phases
-            for phase, phase_data in suggested_phases.items():
-                if phase not in CROP_PHASES:
-                    continue
-                existing_phase = existing_phases.get(phase) or {}
-                existing_phases[phase] = existing_phase
-                for key in ("start", "end"):
-                    if not existing_phase.get(key) and phase_data.get(key):
-                        existing_phase[key] = phase_data[key]
-                        changed = True
-                        LOGGER.debug("Set %s.%s.%s = %s", crop.get("name"), phase, key, phase_data[key])
+            if suggestion.get("phases"):
+                changed = self._merge_phases(crop, suggestion["phases"]) or changed
             if changed:
                 updated += 1
 
@@ -478,4 +493,3 @@ class FillCropFieldsAITask(AITaskEntity):
     async def async_added_to_hass(self) -> None:
         """Register in entity registry once added to hass."""
         self.update_registry()
-

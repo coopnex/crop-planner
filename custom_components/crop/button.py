@@ -28,7 +28,9 @@ async def async_setup_entry(
     async_add_entities: AddEntitiesCallback,
 ) -> bool:
     """Set up the crop maintenance suggestion button."""
-    async_add_entities([GenerateChoresButton(hass, entry), FillCropFieldsButton(hass, entry)])
+    async_add_entities(
+        [GenerateChoresButton(hass, entry), FillCropFieldsButton(hass, entry)]
+    )
     return True
 
 
