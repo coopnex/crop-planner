@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import copy
 import uuid
 from datetime import UTC, datetime
 from typing import TYPE_CHECKING, Any
@@ -152,7 +153,7 @@ _FILL_FIELDS_SCHEMA = vol.Schema(
         vol.Required("crops"): [
             vol.Schema(
                 {
-                    vol.Required("id"): str,
+                    vol.Required("entity_id"): str,
                     vol.Optional("species"): str,
                     vol.Optional("phases"): {
                         vol.Optional("sowing"): _PHASE_SCHEMA,
@@ -354,7 +355,7 @@ class FillCropFieldsAITask(AITaskEntity):
         chat_log: ChatLog,  # noqa: ARG002
     ) -> GenDataTaskResult:
         """Identify incomplete crops, ask the LLM to fill them, then persist."""
-        crops: list[dict] = list(self._entry.data.get(CONF_CROPS, []))
+        crops: list[dict] = copy.deepcopy(list(self._entry.data.get(CONF_CROPS, [])))
 
         incomplete = [c for c in crops if self._crop_is_incomplete(c)]
         if not incomplete:
@@ -385,10 +386,13 @@ class FillCropFieldsAITask(AITaskEntity):
         data: dict = result.data or {}
         suggestions: list[dict] = data.get("crops", [])
         summary: str = data.get("summary", "")
+        LOGGER.debug("Fill-fields suggestions received (%d): %s", len(suggestions), suggestions)
 
         if suggestions:
             updated_count = self._merge_suggestions(crops, suggestions)
             LOGGER.debug("Filled fields for %d crop(s).", updated_count)
+        else:
+            LOGGER.debug("No suggestions returned by LLM.")
 
         if summary:
             async_create(
@@ -416,10 +420,24 @@ class FillCropFieldsAITask(AITaskEntity):
         self, crops: list[dict[str, Any]], suggestions: list[dict[str, Any]]
     ) -> int:
         """Merge AI suggestions into the crops list; never overwrite existing data."""
-        suggestions_by_id = {s["id"]: s for s in suggestions if s.get("id")}
+        entity_registry = er.async_get(self._hass)
+        # Build a map from entity_id → crop UUID using the entity registry.
+        suggestions_by_crop_id: dict[str, dict] = {}
+        for suggestion in suggestions:
+            entity_id = suggestion.get("entity_id")
+            if not entity_id:
+                LOGGER.debug("Suggestion missing entity_id: %s", suggestion)
+                continue
+            entry = entity_registry.async_get(entity_id)
+            if entry and entry.unique_id:
+                suggestions_by_crop_id[entry.unique_id] = suggestion
+                LOGGER.debug("Mapped entity_id %s → crop id %s", entity_id, entry.unique_id)
+            else:
+                LOGGER.warning("Could not resolve entity_id %s in registry", entity_id)
+
         updated = 0
         for crop in crops:
-            suggestion = suggestions_by_id.get(crop["id"])
+            suggestion = suggestions_by_crop_id.get(crop["id"])
             if suggestion is None:
                 continue
             changed = False
@@ -429,15 +447,19 @@ class FillCropFieldsAITask(AITaskEntity):
                 changed = True
             # Fill phase dates only where missing.
             suggested_phases: dict[str, dict] = suggestion.get("phases", {})
-            existing_phases: dict[str, dict] = crop.setdefault("phases", {})
+            # crop dicts from entry.data are plain dicts — safe to mutate.
+            existing_phases: dict[str, dict] = crop.get("phases") or {}
+            crop["phases"] = existing_phases
             for phase, phase_data in suggested_phases.items():
                 if phase not in CROP_PHASES:
                     continue
-                existing_phase = existing_phases.setdefault(phase, {})
+                existing_phase = existing_phases.get(phase) or {}
+                existing_phases[phase] = existing_phase
                 for key in ("start", "end"):
                     if not existing_phase.get(key) and phase_data.get(key):
                         existing_phase[key] = phase_data[key]
                         changed = True
+                        LOGGER.debug("Set %s.%s.%s = %s", crop.get("name"), phase, key, phase_data[key])
             if changed:
                 updated += 1
 
