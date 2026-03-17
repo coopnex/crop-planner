@@ -44,6 +44,16 @@
               "name": "Crop calendar"
             }
         },
+        "sensor": {
+            "ai_state": {
+                "name": "State",
+                "state": {
+                    "idle": "Idle",
+                    "proposing_tasks": "Proposing tasks…",
+                    "filling_fields": "Filling fields…"
+                }
+            }
+        },
         "crop": {
             "crop": {
                 "state": {

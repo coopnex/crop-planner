@@ -44,6 +44,16 @@
                 "name": "Calendari de conreu"
             }
         },
+        "sensor": {
+            "ai_state": {
+                "name": "Estat",
+                "state": {
+                    "idle": "En espera",
+                    "proposing_tasks": "Proposant tasques…",
+                    "filling_fields": "Emplenant camps…"
+                }
+            }
+        },
         "crop": {
             "crop": {
                 "state": {

@@ -66,6 +66,15 @@ CHORE_CATEGORY_ICONS: dict[str, str] = {
     ChoreCategory.OTHER: "📋",
 }
 
+
+class AIState(StrEnum):
+    """States for the AI task sensor."""
+
+    IDLE = "idle"
+    PROPOSING_TASKS = "proposing_tasks"
+    FILLING_FIELDS = "filling_fields"
+
+
 # OpenPlantBook constants
 CONF_CLIENT_ID = "client_id"
 CONF_CLIENT_SECRET = "client_secret"  # noqa: S105
