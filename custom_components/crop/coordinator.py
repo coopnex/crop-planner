@@ -13,7 +13,7 @@ from homeassistant.helpers.entity import async_generate_entity_id
 from homeassistant.helpers.update_coordinator import DataUpdateCoordinator
 from homeassistant.loader import Integration
 
-from .const import AIState, DOMAIN
+from .const import DOMAIN, AIState
 
 if TYPE_CHECKING:
     from logging import Logger

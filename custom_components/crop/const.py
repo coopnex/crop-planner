@@ -66,6 +66,7 @@ CHORE_CATEGORY_ICONS: dict[str, str] = {
     ChoreCategory.OTHER: "📋",
 }
 
+
 class AIState(StrEnum):
     """States for the AI task sensor."""
 

@@ -10,7 +10,7 @@ from homeassistant.helpers import entity_registry as er
 from homeassistant.helpers.entity import async_generate_entity_id
 from homeassistant.helpers.update_coordinator import CoordinatorEntity
 
-from .const import AIState, COORDINATOR, DOMAIN
+from .const import COORDINATOR, DOMAIN
 
 if TYPE_CHECKING:
     from homeassistant.core import HomeAssistant
