@@ -1,9 +1,6 @@
 name: Validate HA
 
 on:
-  workflow_dispatch:
-  schedule:
-    - cron:  "0 0 * * 1"
   push:
     branches:
       - "main"
@@ -35,3 +32,37 @@ jobs:
           category: "integration"
           # Remove this 'ignore' key when you have added brand images for your integration to https://github.com/home-assistant/brands
           ignore: brands
+  ruff:
+    name: "Lint"
+    runs-on: "ubuntu-latest"
+    steps:
+      - name: Checkout the repository
+        uses: actions/checkout@v6 # v5.0.0
+      - name: Set up Python
+        uses: actions/setup-python@v6 # v6.0.0
+        with:
+          python-version: "3.13"
+          cache: "pip"
+      - name: Install requirements
+        run: python3 -m pip install -r requirements.txt
+      - name: Lint
+        run: python3 -m ruff check .
+      - name: Format
+        run: python3 -m ruff format . --check
+  test:
+    name: "Test"
+    runs-on: "ubuntu-latest"
+    steps:
+      - name: Checkout the repository
+        uses: actions/checkout@v6 # v5.0.0
+      - name: Set up Python
+        uses: actions/setup-python@v6 # v6.0.0
+        with:
+          python-version: "3.13"
+          cache: "pip"
+      - name: Install test requirements
+        run: |
+          pip install pytest pytest-cov
+          python3 -m pip install -r requirements.txt -r requirements_test.txt
+      - name: Run tests
+        run: pytest
