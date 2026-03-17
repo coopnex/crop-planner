@@ -24,7 +24,7 @@ jobs:
       - name: Format
         run: python3 -m ruff format . --check
       - name: Run tests
-        run: pytest
+        run: python3 -m pytest
       - name: Determine pre-release flag
         id: prerelease
         run: |
