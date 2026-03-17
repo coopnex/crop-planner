@@ -31,6 +31,7 @@ from .const import (
     CROP_PLATFORM,
     DOMAIN,
     LOGGER,
+    AIState,
     ChoreCategory,
 )
 
@@ -224,6 +225,7 @@ class GenerateChoresAITask(AITaskEntity):
         coordinator: CropPlannerCoordinator = hass.data[DOMAIN][COORDINATOR]
         self._hass = hass
         self._entry = entry
+        self._coordinator = coordinator
         self._attr_unique_id = f"{entry.entry_id}_generate_chores"
         self._device_id = coordinator.device_id
         self.entity_id = async_generate_entity_id(
@@ -236,6 +238,17 @@ class GenerateChoresAITask(AITaskEntity):
         chat_log: ChatLog,  # noqa: ARG002
     ) -> GenDataTaskResult:
         """Enrich the task with crop context, delegate to an LLM, and add todos."""
+        self._coordinator.set_ai_state(AIState.PROPOSING_TASKS)
+        try:
+            return await self._async_generate_data_inner(task)
+        finally:
+            self._coordinator.set_ai_state(AIState.IDLE)
+
+    async def _async_generate_data_inner(
+        self,
+        task: GenDataTask,
+    ) -> GenDataTaskResult:
+        """Inner implementation of generate data."""
         crops: list[dict] = list(self._entry.data.get(CONF_CROPS, []))
         todos: list[dict] = list(self._entry.data.get(CONF_TODOS, []))
 
@@ -344,6 +357,7 @@ class FillCropFieldsAITask(AITaskEntity):
         coordinator: CropPlannerCoordinator = hass.data[DOMAIN][COORDINATOR]
         self._hass = hass
         self._entry = entry
+        self._coordinator = coordinator
         self._attr_unique_id = f"{entry.entry_id}_enrich_crop_data"
         self._device_id = coordinator.device_id
         self.entity_id = async_generate_entity_id(
@@ -356,6 +370,17 @@ class FillCropFieldsAITask(AITaskEntity):
         chat_log: ChatLog,  # noqa: ARG002
     ) -> GenDataTaskResult:
         """Identify incomplete crops, ask the LLM to fill them, then persist."""
+        self._coordinator.set_ai_state(AIState.FILLING_FIELDS)
+        try:
+            return await self._async_generate_data_inner(task)
+        finally:
+            self._coordinator.set_ai_state(AIState.IDLE)
+
+    async def _async_generate_data_inner(
+        self,
+        task: GenDataTask,
+    ) -> GenDataTaskResult:
+        """Inner implementation of generate data."""
         crops: list[dict] = copy.deepcopy(list(self._entry.data.get(CONF_CROPS, [])))
 
         incomplete = [c for c in crops if self._crop_is_incomplete(c)]

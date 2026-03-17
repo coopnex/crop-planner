@@ -13,7 +13,7 @@ from homeassistant.helpers.entity import async_generate_entity_id
 from homeassistant.helpers.update_coordinator import DataUpdateCoordinator
 from homeassistant.loader import Integration
 
-from .const import DOMAIN
+from .const import AIState, DOMAIN
 
 if TYPE_CHECKING:
     from logging import Logger
@@ -49,9 +49,20 @@ class CropPlannerCoordinator(DataUpdateCoordinator):
         self._attr_unique_id = self.config_entry.entry_id
         self._config_entries = []
         self._device_id = None
+        self._ai_state: AIState = AIState.IDLE
         self.entity_id = async_generate_entity_id(
             f"{DOMAIN}.{{}}", self._name, current_ids={}
         )
+
+    @property
+    def ai_state(self) -> AIState:
+        """Current AI task state."""
+        return self._ai_state
+
+    def set_ai_state(self, state: AIState) -> None:
+        """Update the AI state and notify all listeners."""
+        self._ai_state = state
+        self.async_update_listeners()
 
     @property
     def device_id(self) -> str | None:

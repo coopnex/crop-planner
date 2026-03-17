@@ -44,6 +44,16 @@
                 "name": "Calendario de cultivo"
             }
         },
+        "sensor": {
+            "ai_state": {
+                "name": "Estado",
+                "state": {
+                    "idle": "En espera",
+                    "proposing_tasks": "Proponiendo tareas…",
+                    "filling_fields": "Rellenando campos…"
+                }
+            }
+        },
         "crop": {
             "crop": {
                 "state": {

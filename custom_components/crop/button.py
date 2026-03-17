@@ -9,8 +9,9 @@ from homeassistant.components.button import ButtonEntity
 from homeassistant.const import Platform
 from homeassistant.helpers import entity_registry as er
 from homeassistant.helpers.entity import async_generate_entity_id
+from homeassistant.helpers.update_coordinator import CoordinatorEntity
 
-from .const import COORDINATOR, DOMAIN, LOGGER
+from .const import AIState, COORDINATOR, DOMAIN, LOGGER
 
 if TYPE_CHECKING:
     from homeassistant.core import HomeAssistant
@@ -28,21 +29,30 @@ async def async_setup_entry(
     async_add_entities: AddEntitiesCallback,
 ) -> bool:
     """Set up the crop maintenance suggestion button."""
+    coordinator: CropPlannerCoordinator = hass.data[DOMAIN][COORDINATOR]
     async_add_entities(
-        [GenerateChoresButton(hass, entry), FillCropFieldsButton(hass, entry)]
+        [
+            GenerateChoresButton(hass, entry, coordinator),
+            FillCropFieldsButton(hass, entry, coordinator),
+        ]
     )
     return True
 
 
-class GenerateChoresButton(ButtonEntity):
+class GenerateChoresButton(CoordinatorEntity, ButtonEntity):
     """Button that triggers the GenerateChoresAITask entity."""
 
     _attr_has_entity_name = True
     _attr_translation_key = "generate_chores"
 
-    def __init__(self, hass: HomeAssistant, entry: CropPlannerConfigEntry) -> None:
+    def __init__(
+        self,
+        hass: HomeAssistant,
+        entry: CropPlannerConfigEntry,
+        coordinator: CropPlannerCoordinator,
+    ) -> None:
         """Initialise the button."""
-        coordinator: CropPlannerCoordinator = hass.data[DOMAIN][COORDINATOR]
+        super().__init__(coordinator)
         self._hass = hass
         self._entry = entry
         self._attr_unique_id = f"{entry.entry_id}_generate_chores_button"
@@ -50,6 +60,11 @@ class GenerateChoresButton(ButtonEntity):
         self.entity_id = async_generate_entity_id(
             f"{Platform.BUTTON}.{{}}", "crop generate chores", current_ids={}
         )
+
+    @property
+    def available(self) -> bool:
+        """Only available when no AI task is running."""
+        return self.coordinator.ai_state == AIState.IDLE
 
     def _ai_task_entity_id(self) -> str | None:
         """Resolve the entity_id of our GenerateChoresAITask."""
@@ -83,18 +98,24 @@ class GenerateChoresButton(ButtonEntity):
 
     async def async_added_to_hass(self) -> None:
         """Register in the entity registry once added to hass."""
+        await super().async_added_to_hass()
         self.update_registry()
 
 
-class FillCropFieldsButton(ButtonEntity):
+class FillCropFieldsButton(CoordinatorEntity, ButtonEntity):
     """Button that triggers the FillCropFieldsAITask entity."""
 
     _attr_has_entity_name = True
     _attr_translation_key = "enrich_crop_data"
 
-    def __init__(self, hass: HomeAssistant, entry: CropPlannerConfigEntry) -> None:
+    def __init__(
+        self,
+        hass: HomeAssistant,
+        entry: CropPlannerConfigEntry,
+        coordinator: CropPlannerCoordinator,
+    ) -> None:
         """Initialise the button."""
-        coordinator: CropPlannerCoordinator = hass.data[DOMAIN][COORDINATOR]
+        super().__init__(coordinator)
         self._hass = hass
         self._entry = entry
         self._attr_unique_id = f"{entry.entry_id}_enrich_crops_data_button"
@@ -102,6 +123,11 @@ class FillCropFieldsButton(ButtonEntity):
         self.entity_id = async_generate_entity_id(
             f"{Platform.BUTTON}.{{}}", "enrich crops data", current_ids={}
         )
+
+    @property
+    def available(self) -> bool:
+        """Only available when no AI task is running."""
+        return self.coordinator.ai_state == AIState.IDLE
 
     def _ai_task_entity_id(self) -> str | None:
         """Resolve the entity_id of our FillCropFieldsAITask."""
@@ -135,4 +161,5 @@ class FillCropFieldsButton(ButtonEntity):
 
     async def async_added_to_hass(self) -> None:
         """Register in the entity registry once added to hass."""
+        await super().async_added_to_hass()
         self.update_registry()
