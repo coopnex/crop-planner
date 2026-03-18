@@ -214,10 +214,12 @@ async def test_options_flow_select_none_species(hass, loaded_entry):
 
 async def test_options_flow_search_fails_still_shows_select(hass, loaded_entry):
     """If OPB search raises, the select step still appears with only 'None'."""
-    with patch("custom_components.crop.config_flow.OpenPlantbookHelper") as mock_cls:
-        mock_cls.return_value.openplantbook_search = AsyncMock(
-            side_effect=Exception("OPB down")
-        )
+    mock_helper = AsyncMock()
+    mock_helper.openplantbook_search = AsyncMock(side_effect=Exception("OPB down"))
+    with patch(
+        "custom_components.crop.coordinator.CropPlannerCoordinator.opb_helper",
+        return_value=mock_helper,
+    ):
         result = await hass.config_entries.options.async_init(loaded_entry.entry_id)
         result = await hass.config_entries.options.async_configure(
             result["flow_id"], {"next_step_id": "add_crop"}

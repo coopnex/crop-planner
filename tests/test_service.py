@@ -35,11 +35,14 @@ async def test_create_crop_persists_in_config_entry(hass, setup_integration):
     assert any(c["name"] == "Basil" for c in crops)
 
 
-async def test_create_crop_without_species_skips_openplantbook(hass, setup_integration):
-    """OpenPlantbook is not queried when no species is provided."""
+async def test_create_crop_without_species_uses_name_as_hint(hass, setup_integration):
+    """Without a species, OpenPlantbook is queried using the crop name as hint."""
+    mock_helper = AsyncMock()
+    mock_helper.openplantbook_get = AsyncMock(return_value=None)
     with patch(
-        "custom_components.crop.service.OpenPlantbookHelper.openplantbook_get"
-    ) as mock_opb:
+        "custom_components.crop.coordinator.CropPlannerCoordinator.opb_helper",
+        return_value=mock_helper,
+    ):
         await hass.services.async_call(
             DOMAIN,
             "create_crop",
@@ -48,7 +51,7 @@ async def test_create_crop_without_species_skips_openplantbook(hass, setup_integ
         )
         await hass.async_block_till_done()
 
-    mock_opb.assert_not_called()
+    mock_helper.openplantbook_get.assert_called_once_with("Oregano")
 
 
 async def test_create_crop_with_species_sets_image_url(hass, setup_integration):
@@ -57,7 +60,7 @@ async def test_create_crop_with_species_sets_image_url(hass, setup_integration):
     mock_helper = AsyncMock()
     mock_helper.openplantbook_get = AsyncMock(return_value=opb_response)
     with patch(
-        "custom_components.crop.service.OpenPlantbookHelper",
+        "custom_components.crop.coordinator.CropPlannerCoordinator.opb_helper",
         return_value=mock_helper,
     ):
         await hass.services.async_call(
@@ -78,7 +81,7 @@ async def test_create_crop_with_unavailable_openplantbook(hass, setup_integratio
     mock_helper = AsyncMock()
     mock_helper.openplantbook_get = AsyncMock(return_value=None)
     with patch(
-        "custom_components.crop.service.OpenPlantbookHelper",
+        "custom_components.crop.coordinator.CropPlannerCoordinator.opb_helper",
         return_value=mock_helper,
     ):
         await hass.services.async_call(
