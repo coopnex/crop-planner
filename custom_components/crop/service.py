@@ -22,7 +22,6 @@ from .const import (
     LOGGER,
 )
 from .crop import CropData
-from .openplantbook import OpenPlantbookHelper
 
 if TYPE_CHECKING:
     from homeassistant.helpers.entity_component import EntityComponent
@@ -71,17 +70,22 @@ def register_component_services(component: EntityComponent) -> None:
             quantity=call.data.get(ATTR_QUANTITY, 1),
             species=call.data.get(ATTR_SPECIES, None),
         )
-        if crop_data.species is not None:
-            opb_result = await OpenPlantbookHelper(hass).openplantbook_get(
-                crop_data.species
-            )
+
+        helper = coordinator.opb_helper()
+        if helper is not None:
+            species_hint = (crop_data.species or crop_data.name)
+            opb_result = await helper.openplantbook_get(species_hint)
             LOGGER.debug("OpenPlantbook result: %s", opb_result)
             if opb_result is not None:
                 crop_data.image_url = opb_result.get("image_url", None)
             else:
                 LOGGER.info(
-                    "No OpenPlantbook data found for species: %s", crop_data.species
+                    "No OpenPlantbook data found for species: %s", species_hint
                 )
+        else:
+            LOGGER.debug(
+                "OpenPlantbook credentials not set, skipping species lookup"
+            )
         new_data = {
             "crops": [
                 *coordinator.config_entry.data.get("crops", []),

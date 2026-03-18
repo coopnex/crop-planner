@@ -20,6 +20,7 @@ from .const import (
     CONF_CLIENT_ID,
     CONF_CLIENT_SECRET,
     CONF_CROPS,
+    COORDINATOR,
     CROP_PHASES,
     CROP_PLANNER,
     DOMAIN,
@@ -28,10 +29,11 @@ from .const import (
     OPB_PID,
     PHASE_SOWING,
 )
-from .openplantbook import OpenPlantbookHelper
 
 if TYPE_CHECKING:
     from homeassistant.data_entry_flow import FlowResult
+
+    from .openplantbook import OpenPlantbookHelper
 
 _NO_SPECIES = "__none__"
 
@@ -178,11 +180,10 @@ class CropPlannerOptionsFlowHandler(config_entries.OptionsFlow):
         )
 
     def _opb_helper(self) -> OpenPlantbookHelper | None:
-        """Return an OpenPlantbookHelper if credentials are configured."""
-        client_id = self.config_entry.data.get(CONF_CLIENT_ID, "")
-        secret = self.config_entry.data.get(CONF_CLIENT_SECRET, "")
-        if client_id and secret:
-            return OpenPlantbookHelper(client_id, secret)
+        """Return an OpenPlantbookHelper via the coordinator if credentials are set."""
+        coordinator = self.hass.data.get(DOMAIN, {}).get(COORDINATOR)
+        if coordinator is not None:
+            return coordinator.opb_helper()
         return None
 
     async def _search_species(self, hint: str) -> FlowResult:
