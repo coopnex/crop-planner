@@ -19,6 +19,7 @@ from .coordinator import (
 )
 from .crop import Crop
 from .data import create_crop_data
+from .scripts import async_ensure_scripts
 from .service import register_component_services
 
 if TYPE_CHECKING:
@@ -69,6 +70,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: CropPlannerConfigEntry) 
     coordinator.update_registry()
 
     await coordinator.async_config_entry_first_refresh()
+    await async_ensure_scripts(hass)
 
     crops = [
         Crop(hass, create_crop_data(crop_data))
