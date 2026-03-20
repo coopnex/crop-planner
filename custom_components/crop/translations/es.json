@@ -24,6 +24,9 @@
             },
             "enrich_crop_data": {
                 "name": "Rellenar campos de cultivo faltantes"
+            },
+            "guess_species": {
+                "name": "Adivinar especie"
             }
         },
         "button": {

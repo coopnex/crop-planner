@@ -24,6 +24,9 @@
             },
             "enrich_crop_data": {
                 "name": "Emplenar camps de cultiu que falten"
+            },
+            "guess_species": {
+                "name": "Endevinar espècie"
             }
         },
         "button": {

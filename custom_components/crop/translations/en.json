@@ -24,6 +24,9 @@
             },
             "enrich_crop_data": {
                 "name": "Fill missing crop fields"
+            },
+            "guess_species": {
+                "name": "Guess species"
             }
         },
         "button": {
