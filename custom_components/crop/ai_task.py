@@ -19,7 +19,7 @@ from homeassistant.components.ai_task.const import DATA_COMPONENT
 from homeassistant.components.persistent_notification import async_create
 from homeassistant.const import Platform
 from homeassistant.exceptions import HomeAssistantError
-from homeassistant.helpers import entity_registry as er
+from homeassistant.helpers import aiohttp_client, entity_registry as er
 from homeassistant.helpers.entity import async_generate_entity_id
 
 from .const import (
@@ -202,6 +202,7 @@ async def async_setup_entry(
             GenerateChoresAITask(hass, entry),
             FillCropFieldsAITask(hass, entry),
             GuessSpeciesAITask(hass, entry),
+            WikipediaImageAITask(hass, entry),
         ]
     )
     return True
@@ -598,6 +599,96 @@ class FillCropFieldsAITask(AITaskEntity):
                 data={**self._entry.data, CONF_CROPS: crops},
             )
         return updated
+
+    def update_registry(self) -> None:
+        """Associate the entity with the integration device."""
+        erreg = er.async_get(self._hass)
+        erreg.async_update_entity(self.entity_id, device_id=self._device_id)
+
+    async def async_added_to_hass(self) -> None:
+        """Register in entity registry once added to hass."""
+        self.update_registry()
+
+
+_WIKIPEDIA_API_URL = "https://en.wikipedia.org/api/rest_v1/page/summary/{title}"
+_WIKIPEDIA_SEARCH_URL = (
+    "https://en.wikipedia.org/w/api.php"
+    "?action=query&list=search&srsearch={query}&srlimit=1&format=json"
+)
+
+
+class WikipediaImageAITask(AITaskEntity):
+    """AI task entity that fetches a plant's image URL from Wikipedia."""
+
+    _attr_supported_features = AITaskEntityFeature.GENERATE_DATA
+    _attr_has_entity_name = True
+    _attr_translation_key = "wikipedia_image"
+
+    def __init__(self, hass: HomeAssistant, entry: CropPlannerConfigEntry) -> None:
+        """Initialise the entity."""
+        coordinator: CropPlannerCoordinator = hass.data[DOMAIN][COORDINATOR]
+        self._hass = hass
+        self._entry = entry
+        self._attr_unique_id = f"{entry.entry_id}_wikipedia_image"
+        self._device_id = coordinator.device_id
+        self.entity_id = async_generate_entity_id(
+            f"{Platform.AI_TASK}.{{}}", "crop wikipedia image", current_ids={}
+        )
+
+    async def _async_generate_data(
+        self,
+        task: GenDataTask,
+        chat_log: ChatLog,  # noqa: ARG002
+    ) -> GenDataTaskResult:
+        """Fetch the Wikipedia image for the plant name given in task.instructions."""
+        plant_name = (task.instructions or "").strip()
+        if not plant_name:
+            msg = "No plant name provided. Pass the plant name via the instructions field."
+            raise HomeAssistantError(msg)
+
+        session = aiohttp_client.async_get_clientsession(self._hass)
+
+        # Step 1: search Wikipedia for the best matching article title.
+        search_url = _WIKIPEDIA_SEARCH_URL.format(query=plant_name.replace(" ", "+"))
+        async with session.get(search_url, timeout=10) as resp:
+            resp.raise_for_status()
+            search_data: dict = await resp.json()
+
+        hits: list[dict] = search_data.get("query", {}).get("search", [])
+        if not hits:
+            LOGGER.debug("Wikipedia: no results for %r", plant_name)
+            return GenDataTaskResult(
+                conversation_id=None,
+                data={"plant_name": plant_name, "image_url": None, "page_url": None},
+            )
+
+        page_title: str = hits[0]["title"]
+
+        # Step 2: fetch the page summary which includes thumbnail / originalimage.
+        summary_url = _WIKIPEDIA_API_URL.format(title=page_title.replace(" ", "_"))
+        async with session.get(summary_url, timeout=10) as resp:
+            resp.raise_for_status()
+            summary: dict = await resp.json()
+
+        image_url: str | None = (
+            summary.get("originalimage") or summary.get("thumbnail") or {}
+        ).get("source")
+        page_url: str | None = (
+            summary.get("content_urls", {}).get("desktop", {}).get("page")
+        )
+
+        LOGGER.debug(
+            "Wikipedia image for %r (article: %r): %s", plant_name, page_title, image_url
+        )
+        return GenDataTaskResult(
+            conversation_id=None,
+            data={
+                "plant_name": plant_name,
+                "article_title": page_title,
+                "image_url": image_url,
+                "page_url": page_url,
+            },
+        )
 
     def update_registry(self) -> None:
         """Associate the entity with the integration device."""

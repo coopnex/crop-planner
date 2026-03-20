@@ -27,6 +27,9 @@
             },
             "guess_species": {
                 "name": "Adivinar especie"
+            },
+            "wikipedia_image": {
+                "name": "Obtener imagen de Wikipedia"
             }
         },
         "button": {
