@@ -202,7 +202,7 @@ async def async_setup_entry(
             GenerateChoresAITask(hass, entry),
             FillCropFieldsAITask(hass, entry),
             GuessSpeciesAITask(hass, entry),
-            WikipediaImageAITask(hass, entry),
+            INaturalistImageAITask(hass, entry),
         ]
     )
     return True
@@ -377,7 +377,7 @@ class GuessSpeciesAITask(AITaskEntity):
         self._attr_unique_id = f"{entry.entry_id}_guess_species"
         self._device_id = coordinator.device_id
         self.entity_id = async_generate_entity_id(
-            f"{Platform.AI_TASK}.{{}}", "crop guess species", current_ids={}
+            f"{Platform.AI_TASK}.{{}}", "guess species", current_ids={}
         )
 
     async def _async_generate_data(
@@ -473,6 +473,11 @@ class FillCropFieldsAITask(AITaskEntity):
         """Inner implementation of generate data."""
         crops: list[dict] = copy.deepcopy(list(self._entry.data.get(CONF_CROPS, [])))
 
+        # Track which crops need an image before we mutate anything.
+        needs_image: set[str] = {
+            c["id"] for c in crops if not c.get("image_url") and not c.get("species")
+        }
+
         incomplete = [c for c in crops if self._crop_is_incomplete(c)]
         if not incomplete:
             LOGGER.debug("All crops are already complete; nothing to fill.")
@@ -515,6 +520,9 @@ class FillCropFieldsAITask(AITaskEntity):
         else:
             LOGGER.debug("No suggestions returned by LLM.")
 
+        # Fetch iNaturalist images for crops that had neither image nor species.
+        await self._fetch_missing_images(crops, needs_image)
+
         if summary:
             async_create(
                 self._hass,
@@ -524,6 +532,51 @@ class FillCropFieldsAITask(AITaskEntity):
             )
 
         return result
+
+    async def _fetch_missing_images(
+        self, crops: list[dict[str, Any]], crop_ids: set[str]
+    ) -> None:
+        """Fetch iNaturalist images for crops in *crop_ids* and persist."""
+        if not crop_ids:
+            return
+        image_entity_id = er.async_get(self._hass).async_get_entity_id(
+            Platform.AI_TASK, DOMAIN, f"{self._entry.entry_id}_inaturalist_image"
+        )
+        if image_entity_id is None:
+            LOGGER.debug("INaturalistImageAITask entity not found; skipping image fetch")
+            return
+
+        updated = False
+        for crop in crops:
+            if crop["id"] not in crop_ids or crop.get("image_url"):
+                continue
+            query = crop.get("species") or crop.get("name", "")
+            try:
+                img_result = await async_generate_data(
+                    self._hass,
+                    task_name="inaturalist_image",
+                    entity_id=image_entity_id,
+                    instructions=query,
+                )
+                image_url: str | None = (img_result.data or {}).get("image_url")
+                LOGGER.debug("iNaturalist image for %r: %s", query, image_url)
+                if image_url:
+                    crop["image_url"] = image_url
+                    updated = True
+            except Exception as exc:  # noqa: BLE001
+                LOGGER.warning("iNaturalist image fetch failed for %r: %s", query, exc)
+
+        if updated:
+            current_crops = list(self._entry.data.get(CONF_CROPS, []))
+            images_by_id = {c["id"]: c.get("image_url") for c in crops if c.get("image_url")}
+            patched = [
+                {**c, "image_url": images_by_id[c["id"]]} if c["id"] in images_by_id else c
+                for c in current_crops
+            ]
+            self._hass.config_entries.async_update_entry(
+                self._entry,
+                data={**self._entry.data, CONF_CROPS: patched},
+            )
 
     @staticmethod
     def _crop_is_incomplete(crop: dict[str, Any]) -> bool:
@@ -610,29 +663,30 @@ class FillCropFieldsAITask(AITaskEntity):
         self.update_registry()
 
 
-_WIKIPEDIA_API_URL = "https://en.wikipedia.org/api/rest_v1/page/summary/{title}"
-_WIKIPEDIA_SEARCH_URL = (
-    "https://en.wikipedia.org/w/api.php"
-    "?action=query&list=search&srsearch={query}&srlimit=1&format=json"
-)
+_INATURALIST_TAXA_URL = "https://api.inaturalist.org/v1/taxa?q={query}&rank=species&per_page=5"
+
+# iNaturalist controlled term for Plant Phenology (term_id=12):
+#   14 = Fruiting  13 = Flowering  15 = Flower Budding
+_PHENOLOGY_FRUITING = "term_id=12&term_value_id=14"
+_PHENOLOGY_FLOWERING = "term_id=12&term_value_id=13"
 
 
-class WikipediaImageAITask(AITaskEntity):
-    """AI task entity that fetches a plant's image URL from Wikipedia."""
+class INaturalistImageAITask(AITaskEntity):
+    """AI task entity that fetches a plant's image URL from iNaturalist."""
 
     _attr_supported_features = AITaskEntityFeature.GENERATE_DATA
     _attr_has_entity_name = True
-    _attr_translation_key = "wikipedia_image"
+    _attr_translation_key = "inaturalist_image"
 
     def __init__(self, hass: HomeAssistant, entry: CropPlannerConfigEntry) -> None:
         """Initialise the entity."""
         coordinator: CropPlannerCoordinator = hass.data[DOMAIN][COORDINATOR]
         self._hass = hass
         self._entry = entry
-        self._attr_unique_id = f"{entry.entry_id}_wikipedia_image"
+        self._attr_unique_id = f"{entry.entry_id}_inaturalist_image"
         self._device_id = coordinator.device_id
         self.entity_id = async_generate_entity_id(
-            f"{Platform.AI_TASK}.{{}}", "crop wikipedia image", current_ids={}
+            f"{Platform.AI_TASK}.{{}}", "crop inaturalist image", current_ids={}
         )
 
     async def _async_generate_data(
@@ -640,55 +694,114 @@ class WikipediaImageAITask(AITaskEntity):
         task: GenDataTask,
         chat_log: ChatLog,  # noqa: ARG002
     ) -> GenDataTaskResult:
-        """Fetch the Wikipedia image for the plant name given in task.instructions."""
+        """Fetch a representative plant image from iNaturalist.
+
+        The instructions field must contain the plant name (common or scientific).
+        Returns the image_url of the top-voted research-grade observation photo
+        nearest to the user's location, falling back to a global search if no
+        local observations are found.
+        """
         plant_name = (task.instructions or "").strip()
         if not plant_name:
             msg = "No plant name provided. Pass the plant name via the instructions field."
             raise HomeAssistantError(msg)
 
         session = aiohttp_client.async_get_clientsession(self._hass)
+        latitude = self._hass.config.latitude
+        longitude = self._hass.config.longitude
 
-        # Step 1: search Wikipedia for the best matching article title.
-        search_url = _WIKIPEDIA_SEARCH_URL.format(query=plant_name.replace(" ", "+"))
-        async with session.get(search_url, timeout=10) as resp:
+        # Step 1: resolve the plant name to an iNaturalist taxon ID.
+        taxa_url = _INATURALIST_TAXA_URL.format(query=plant_name.replace(" ", "+"))
+        async with session.get(taxa_url, timeout=10) as resp:
             resp.raise_for_status()
-            search_data: dict = await resp.json()
+            taxa_data: dict = await resp.json()
 
-        hits: list[dict] = search_data.get("query", {}).get("search", [])
-        if not hits:
-            LOGGER.debug("Wikipedia: no results for %r", plant_name)
+        results: list[dict] = taxa_data.get("results", [])
+        if not results:
+            LOGGER.debug("iNaturalist: no taxon found for %r", plant_name)
             return GenDataTaskResult(
                 conversation_id=None,
-                data={"plant_name": plant_name, "image_url": None, "page_url": None},
+                data={"plant_name": plant_name, "image_url": None},
             )
 
-        page_title: str = hits[0]["title"]
+        taxon: dict = results[0]
+        taxon_id: int = taxon["id"]
+        taxon_name: str = taxon.get("name", plant_name)
+        LOGGER.debug("iNaturalist: resolved %r -> taxon %s (%s)", plant_name, taxon_id, taxon_name)
 
-        # Step 2: fetch the page summary which includes thumbnail / originalimage.
-        summary_url = _WIKIPEDIA_API_URL.format(title=page_title.replace(" ", "_"))
-        async with session.get(summary_url, timeout=10) as resp:
-            resp.raise_for_status()
-            summary: dict = await resp.json()
+        # Step 2: search for a fruiting or flowering close-up, progressively relaxing
+        # the location radius and phenology filter until a photo is found.
+        image_url: str | None = None
+        for phenology in (_PHENOLOGY_FRUITING, _PHENOLOGY_FLOWERING, None):
+            for radius in (500, 2000, None):
+                image_url = await self._fetch_observation_image(
+                    session, taxon_id, latitude, longitude,
+                    radius=radius, phenology=phenology,
+                )
+                if image_url:
+                    LOGGER.debug(
+                        "iNaturalist: found image (phenology=%s, radius=%s) for taxon %s",
+                        phenology, radius, taxon_id,
+                    )
+                    break
+            if image_url:
+                break
 
-        image_url: str | None = (
-            summary.get("originalimage") or summary.get("thumbnail") or {}
-        ).get("source")
-        page_url: str | None = (
-            summary.get("content_urls", {}).get("desktop", {}).get("page")
-        )
+        # Last resort: use the taxon's own default photo if available.
+        if image_url is None:
+            default_photo: dict = taxon.get("default_photo") or {}
+            raw_url: str | None = default_photo.get("medium_url") or default_photo.get("square_url")
+            if raw_url:
+                image_url = raw_url
+                LOGGER.debug("iNaturalist: using taxon default photo for %s", taxon_name)
 
-        LOGGER.debug(
-            "Wikipedia image for %r (article: %r): %s", plant_name, page_title, image_url
-        )
+        LOGGER.debug("iNaturalist image for %r: %s", plant_name, image_url)
         return GenDataTaskResult(
             conversation_id=None,
             data={
                 "plant_name": plant_name,
-                "article_title": page_title,
+                "taxon_name": taxon_name,
+                "taxon_id": taxon_id,
                 "image_url": image_url,
-                "page_url": page_url,
             },
         )
+
+    @staticmethod
+    async def _fetch_observation_image(
+        session,
+        taxon_id: int,
+        lat: float,
+        lng: float,
+        radius: int | None,
+        phenology: str | None = None,
+    ) -> str | None:
+        """Return the medium-size photo URL from the top observation, or None.
+
+        *phenology* is an optional iNaturalist controlled-term query string such as
+        ``_PHENOLOGY_FRUITING`` or ``_PHENOLOGY_FLOWERING`` that biases the search
+        toward close-up fruit or flower shots.
+        """
+        url = (
+            "https://api.inaturalist.org/v1/observations"
+            f"?taxon_id={taxon_id}&quality_grade=research&photos=true"
+            f"&per_page=1&order_by=votes&lat={lat}&lng={lng}"
+        )
+        if radius is not None:
+            url += f"&radius={radius}"
+        if phenology is not None:
+            url += f"&{phenology}"
+        async with session.get(url, timeout=10) as resp:
+            resp.raise_for_status()
+            data: dict = await resp.json()
+        observations: list[dict] = data.get("results", [])
+        if not observations:
+            return None
+        photos: list[dict] = observations[0].get("photos", [])
+        if not photos:
+            return None
+        # iNaturalist photo URLs end in /square.jpg; replace with /medium.jpg.
+        raw: str = photos[0].get("url", "")
+        return raw.replace("/square.", "/medium.") if raw else None
 
     def update_registry(self) -> None:
         """Associate the entity with the integration device."""

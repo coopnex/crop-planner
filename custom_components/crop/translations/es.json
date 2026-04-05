@@ -28,8 +28,8 @@
             "guess_species": {
                 "name": "Adivinar especie"
             },
-            "wikipedia_image": {
-                "name": "Obtener imagen de Wikipedia"
+            "inaturalist_image": {
+                "name": "Obtener imagen de iNaturalist"
             }
         },
         "button": {

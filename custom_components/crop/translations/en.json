@@ -28,8 +28,8 @@
             "guess_species": {
                 "name": "Guess species"
             },
-            "wikipedia_image": {
-                "name": "Get Wikipedia image"
+            "inaturalist_image": {
+                "name": "Get iNaturalist image"
             }
         },
         "button": {
