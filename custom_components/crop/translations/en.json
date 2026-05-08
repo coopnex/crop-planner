@@ -1,140 +1,137 @@
 {
-    "config": {
-        "step": {
-            "user": {
-                "description": "Set up the Crop Planner integration. Crops can be added from the integration options. OpenPlantbook credentials are optional — leave blank to skip species lookup.",
-                "title": "Crop Planner",
-                "data": {
-                    "client_id": "OpenPlantbook Client ID",
-                    "client_secret": "OpenPlantbook Client Secret"
-                }
-            }
+  "config": {
+    "step": {
+      "user": {
+        "description": "Set up the Crop Planner integration. Crops can be added from the integration options. OpenPlantbook credentials are optional — leave blank to skip species lookup.",
+        "title": "Crop Planner",
+        "data": {
+          "client_id": "OpenPlantbook Client ID",
+          "client_secret": "OpenPlantbook Client Secret"
         }
-    },
-    "notification": {
-        "chore_suggestions": {
-            "new_tasks_added": "New tasks added",
-            "open_chore_list": "Open chore list"
-        }
-    },
-    "entity": {
-        "ai_task": {
-            "generate_chores": {
-                "name": "Suggest crop chores"
-            },
-            "enrich_crop_data": {
-                "name": "Fill missing crop fields"
-            },
-            "guess_species": {
-                "name": "Guess species"
-            },
-            "inaturalist_image": {
-                "name": "Get iNaturalist image"
-            },
-            "generate_plant_image": {
-                "name": "Generate plant image"
-            }
-        },
-        "button": {
-            "generate_chores": {
-                "name": "Suggest chores"
-            },
-            "enrich_crop_data": {
-                "name": "Fill missing crop fields"
-            }
-        },
-        "todo": {
-            "crop_chores": {
-                "name": "Crop chores"
-            }
-        },
-        "calendar": {
-            "crop_calendar": {
-              "name": "Crop calendar"
-            }
-        },
-        "sensor": {
-            "ai_state": {
-                "name": "State",
-                "state": {
-                    "idle": "Idle",
-                    "proposing_tasks": "Proposing tasks…",
-                    "filling_fields": "Filling fields…"
-                }
-            }
-        },
-        "crop": {
-            "crop": {
-                "state": {
-                    "ok": "Ok",
-                    "sowing": "Sowing",
-                    "germination": "Germination",
-                    "flowering": "Flowering",
-                    "harvest": "Harvest",
-                    "watering": "Watering",
-                    "fertilising": "Fertilising",
-                    "pest_inspection": "Pest inspection",
-                    "pruning": "Pruning",
-                    "harvesting": "Harvesting",
-                    "planting": "Planting",
-                    "other": "Other"
-                }
-            }
-        }
-    },
-    "options": {
-        "step": {
-            "init": {
-                "title": "Crop Planner options",
-                "menu_options": {
-                    "add_crop": "Add a new crop",
-                    "remove_crops": "Remove crops",
-                    "clear_todos": "Clear all chores",
-                    "finish": "Done"
-                }
-            },
-            "add_crop": {
-                "title": "Add crop",
-                "description": "Add a new crop entity to the planner. Enter a species name to search OpenPlantbook.",
-                "data": {
-                    "name": "Crop name",
-                    "quantity": "Quantity",
-                    "sowing_date": "Sowing date",
-                    "species": "Species search (optional)"
-                }
-            },
-            "select_species": {
-                "title": "Select species",
-                "description": "Choose the species for **{name}** from the OpenPlantbook results, or enter a new search term below to refine.\n\n[Browse results on OpenPlantbook]({opb_url})",
-                "data": {
-                    "species": "Species",
-                    "refine_search": "Refine search"
-                }
-            },
-            "remove_crops": {
-                "title": "Remove crops",
-                "description": "Select one or more crops to remove.",
-                "data": {
-                    "crop_ids": "Crops"
-                }
-            },
-            "phases": {
-                "title": "Lifecycle Phases",
-                "description": "Set the expected date ranges for each growth phase of **{name}**. All fields are optional.",
-                "data": {
-                    "sowing": "Sowing",
-                    "germination": "Germination",
-                    "flowering": "Flowering",
-                    "harvest": "Harvest"
-                }
-            },
-            "clear_todos": {
-                "title": "Clear all chores",
-                "description": "This will permanently delete all crop chores. Press submit to confirm."
-            },
-            "finish": {
-                "title": "Done"
-            }
-        }
+      }
     }
+  },
+  "notification": {
+    "chore_suggestions": {
+      "new_tasks_added": "New tasks added",
+      "open_chore_list": "Open chore list"
+    }
+  },
+  "entity": {
+    "ai_task": {
+      "generate_chores": {
+        "name": "Suggest crop chores"
+      },
+      "enrich_crop_data": {
+        "name": "Fill missing crop fields"
+      },
+      "guess_species": {
+        "name": "Guess species"
+      },
+      "generate_plant_image": {
+        "name": "Generate plant image"
+      }
+    },
+    "button": {
+      "generate_chores": {
+        "name": "Suggest chores"
+      },
+      "enrich_crop_data": {
+        "name": "Fill missing crop fields"
+      }
+    },
+    "todo": {
+      "crop_chores": {
+        "name": "Crop chores"
+      }
+    },
+    "calendar": {
+      "crop_calendar": {
+        "name": "Crop calendar"
+      }
+    },
+    "sensor": {
+      "ai_state": {
+        "name": "State",
+        "state": {
+          "idle": "Idle",
+          "proposing_tasks": "Proposing tasks…",
+          "filling_fields": "Filling fields…"
+        }
+      }
+    },
+    "crop": {
+      "crop": {
+        "state": {
+          "ok": "Ok",
+          "sowing": "Sowing",
+          "germination": "Germination",
+          "flowering": "Flowering",
+          "harvest": "Harvest",
+          "watering": "Watering",
+          "fertilising": "Fertilising",
+          "pest_inspection": "Pest inspection",
+          "pruning": "Pruning",
+          "harvesting": "Harvesting",
+          "planting": "Planting",
+          "other": "Other"
+        }
+      }
+    }
+  },
+  "options": {
+    "step": {
+      "init": {
+        "title": "Crop Planner options",
+        "menu_options": {
+          "add_crop": "Add a new crop",
+          "remove_crops": "Remove crops",
+          "clear_todos": "Clear all chores",
+          "finish": "Done"
+        }
+      },
+      "add_crop": {
+        "title": "Add crop",
+        "description": "Add a new crop entity to the planner. Enter a species name to search OpenPlantbook.",
+        "data": {
+          "name": "Crop name",
+          "quantity": "Quantity",
+          "sowing_date": "Sowing date",
+          "species": "Species search (optional)"
+        }
+      },
+      "select_species": {
+        "title": "Select species",
+        "description": "Choose the species for **{name}** from the OpenPlantbook results, or enter a new search term below to refine.\n\n[Browse results on OpenPlantbook]({opb_url})",
+        "data": {
+          "species": "Species",
+          "refine_search": "Refine search"
+        }
+      },
+      "remove_crops": {
+        "title": "Remove crops",
+        "description": "Select one or more crops to remove.",
+        "data": {
+          "crop_ids": "Crops"
+        }
+      },
+      "phases": {
+        "title": "Lifecycle Phases",
+        "description": "Set the expected date ranges for each growth phase of **{name}**. All fields are optional.",
+        "data": {
+          "sowing": "Sowing",
+          "germination": "Germination",
+          "flowering": "Flowering",
+          "harvest": "Harvest"
+        }
+      },
+      "clear_todos": {
+        "title": "Clear all chores",
+        "description": "This will permanently delete all crop chores. Press submit to confirm."
+      },
+      "finish": {
+        "title": "Done"
+      }
+    }
+  }
 }

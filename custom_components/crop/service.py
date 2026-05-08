@@ -9,9 +9,10 @@ from typing import TYPE_CHECKING
 import voluptuous as vol
 from homeassistant.components.ai_task import async_generate_data
 from homeassistant.config_entries import ConfigEntryState
-from homeassistant.const import Platform, SERVICE_RELOAD
+from homeassistant.const import SERVICE_RELOAD, Platform
 from homeassistant.core import HomeAssistant, ServiceCall, callback
-from homeassistant.helpers import config_validation as cv, entity_registry as er
+from homeassistant.helpers import config_validation as cv
+from homeassistant.helpers import entity_registry as er
 from homeassistant.helpers.service import async_register_admin_service
 
 from .const import (
@@ -56,7 +57,8 @@ def _resolve_ai_task_entity_id(hass: HomeAssistant, unique_id: str) -> str | Non
 
 
 async def _wait_for_reload(coordinator: CropPlannerCoordinator) -> bool:
-    """Wait for the config entry to finish reloading after an update.
+    """
+    Wait for the config entry to finish reloading after an update.
 
     Returns True if the entry returned to LOADED within the timeout, False otherwise.
     """
@@ -81,9 +83,11 @@ async def _enrich_crop(
     crop_name: str,
     species: str | None,
 ) -> None:
-    """Run GuessSpecies and INaturalistImage AI tasks and patch the crop entry."""
+    """Run GuessSpecies and GeneratePlantImage AI tasks and patch the crop entry."""
     if not await _wait_for_reload(coordinator):
-        LOGGER.warning("Config entry did not return to LOADED state; skipping enrichment")
+        LOGGER.warning(
+            "Config entry did not return to LOADED state; skipping enrichment"
+        )
         return
 
     entry = coordinator.config_entry
@@ -110,29 +114,36 @@ async def _enrich_crop(
         else:
             LOGGER.debug("GuessSpeciesAITask entity not found; skipping species guess")
 
-    # Step 2: fetch image from iNaturalist using the resolved species name (or crop name).
+    # Step 2: generate an AI image using the resolved species name (or crop name).
     image_query = species or crop_name
-    entity_id = _resolve_ai_task_entity_id(hass, f"{entry.entry_id}_inaturalist_image")
+    entity_id = _resolve_ai_task_entity_id(
+        hass, f"{entry.entry_id}_generate_plant_image"
+    )
     if entity_id:
         try:
             result = await async_generate_data(
                 hass,
-                task_name="inaturalist_image",
+                task_name="generate_plant_image",
                 entity_id=entity_id,
                 instructions=image_query,
             )
             image_url: str | None = (result.data or {}).get("image_url")
-            LOGGER.debug("iNaturalist image for %r: %s", image_query, image_url)
+            LOGGER.debug("Generated image for %r: %s", image_query, image_url)
             if image_url:
                 fields["image_url"] = image_url
         except Exception as exc:  # noqa: BLE001
-            LOGGER.warning("INaturalistImageAITask failed for %r: %s", image_query, exc)
+            LOGGER.warning(
+                "GeneratePlantImageAITask failed for %r: %s", image_query, exc
+            )
     else:
-        LOGGER.debug("INaturalistImageAITask entity not found; skipping image fetch")
+        LOGGER.debug(
+            "GeneratePlantImageAITask entity not found; skipping image generation"
+        )
 
     # Single patch at the end to avoid triggering multiple reloads.
     if fields:
         _patch_crop(hass, coordinator, crop_id, fields)
+
 
 def _patch_crop(
     hass: HomeAssistant,
@@ -185,7 +196,9 @@ def register_component_services(component: EntityComponent) -> None:
             coordinator.config_entry, data=new_data, unique_id=call.context.id
         )
         hass.async_create_task(
-            _enrich_crop(hass, coordinator, crop_data.id, crop_data.name, crop_data.species)
+            _enrich_crop(
+                hass, coordinator, crop_data.id, crop_data.name, crop_data.species
+            )
         )
 
     async_register_admin_service(

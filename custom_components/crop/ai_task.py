@@ -3,9 +3,12 @@
 from __future__ import annotations
 
 import copy
+import pathlib
+import shutil
 import uuid
 from datetime import UTC, datetime
 from typing import TYPE_CHECKING, Any
+from urllib.parse import urlparse
 
 import voluptuous as vol
 from homeassistant.components.ai_task import (
@@ -20,7 +23,7 @@ from homeassistant.components.ai_task.const import DATA_COMPONENT
 from homeassistant.components.persistent_notification import async_create
 from homeassistant.const import Platform
 from homeassistant.exceptions import HomeAssistantError
-from homeassistant.helpers import aiohttp_client, entity_registry as er
+from homeassistant.helpers import entity_registry as er
 from homeassistant.helpers.entity import async_generate_entity_id
 
 from .const import (
@@ -178,8 +181,10 @@ def _find_delegate_entity_id(hass: HomeAssistant) -> str | None:
 
 
 def _find_image_delegate_entity_id(hass: HomeAssistant) -> str | None:
-    """Return an ai_task entity supporting GENERATE_IMAGE, excluding our own entities."""
-    return _find_delegate_entity_id_for_feature(hass, AITaskEntityFeature.GENERATE_IMAGE)
+    """Return an ai_task entity supporting GENERATE_IMAGE, excluding ours."""
+    return _find_delegate_entity_id_for_feature(
+        hass, AITaskEntityFeature.GENERATE_IMAGE
+    )
 
 
 def _find_delegate_entity_id_for_feature(
@@ -196,7 +201,10 @@ def _find_delegate_entity_id_for_feature(
     if component is None:
         return None
     for entity in component.entities:
-        if entity.entity_id not in our_entity_ids and feature in entity.supported_features:
+        if (
+            entity.entity_id not in our_entity_ids
+            and feature in entity.supported_features
+        ):
             return entity.entity_id
     return None
 
@@ -212,7 +220,6 @@ async def async_setup_entry(
             GenerateChoresAITask(hass, entry),
             FillCropFieldsAITask(hass, entry),
             GuessSpeciesAITask(hass, entry),
-            INaturalistImageAITask(hass, entry),
             GeneratePlantImageAITask(hass, entry),
         ]
     )
@@ -399,7 +406,7 @@ class GuessSpeciesAITask(AITaskEntity):
         """Guess the species for the plant name given in task.instructions."""
         plant_name = (task.instructions or "").strip()
         if not plant_name:
-            msg = "No plant name provided. Pass the plant name via the instructions field."
+            msg = "No plant name provided. Pass it via the instructions field."
             raise HomeAssistantError(msg)
 
         delegate_entity_id = _find_delegate_entity_id(self._hass)
@@ -485,9 +492,7 @@ class FillCropFieldsAITask(AITaskEntity):
         crops: list[dict] = copy.deepcopy(list(self._entry.data.get(CONF_CROPS, [])))
 
         # Track which crops need an image before we mutate anything.
-        needs_image: set[str] = {
-            c["id"] for c in crops if not c.get("image_url")
-        }
+        needs_image: set[str] = {c["id"] for c in crops if not c.get("image_url")}
 
         incomplete = [c for c in crops if self._crop_is_incomplete(c)]
         if not incomplete and not needs_image:
@@ -497,7 +502,9 @@ class FillCropFieldsAITask(AITaskEntity):
                 data={"crops": [], "summary": "All crops are already complete."},
             )
 
-        result = GenDataTaskResult(conversation_id=None, data={"crops": [], "summary": ""})
+        result = GenDataTaskResult(
+            conversation_id=None, data={"crops": [], "summary": ""}
+        )
         summary = ""
 
         if incomplete:
@@ -526,7 +533,9 @@ class FillCropFieldsAITask(AITaskEntity):
             suggestions: list[dict] = data.get("crops", [])
             summary = data.get("summary", "")
             LOGGER.debug(
-                "Fill-fields suggestions received (%d): %s", len(suggestions), suggestions
+                "Fill-fields suggestions received (%d): %s",
+                len(suggestions),
+                suggestions,
             )
 
             if suggestions:
@@ -535,10 +544,12 @@ class FillCropFieldsAITask(AITaskEntity):
             else:
                 LOGGER.debug("No suggestions returned by LLM.")
 
-        # Fetch AI-generated images before saving, so the entity isn't reloaded mid-flight.
-        await self._fetch_missing_images(crops, needs_image)
-
-        self._save_crops(crops)
+        # Fetch images before saving so the entity isn't reloaded mid-flight.
+        # try/finally ensures the save always happens even if image generation fails.
+        try:
+            await self._fetch_missing_images(crops, needs_image)
+        finally:
+            self._save_crops(crops)
 
         if summary:
             async_create(
@@ -560,7 +571,9 @@ class FillCropFieldsAITask(AITaskEntity):
             Platform.AI_TASK, DOMAIN, f"{self._entry.entry_id}_generate_plant_image"
         )
         if image_entity_id is None:
-            LOGGER.debug("GeneratePlantImageAITask entity not found; skipping image fetch")
+            LOGGER.debug(
+                "GeneratePlantImageAITask entity not found; skipping image fetch"
+            )
             return
 
         for crop in crops:
@@ -620,7 +633,7 @@ class FillCropFieldsAITask(AITaskEntity):
     def _merge_suggestions_in_memory(
         self, crops: list[dict[str, Any]], suggestions: list[dict[str, Any]]
     ) -> int:
-        """Merge AI suggestions into the crops list in-memory; never overwrite existing data."""
+        """Merge AI suggestions into crops in-memory; never overwrite existing data."""
         entity_registry = er.async_get(self._hass)
         suggestions_by_crop_id: dict[str, dict] = {}
         for suggestion in suggestions:
@@ -668,145 +681,6 @@ class FillCropFieldsAITask(AITaskEntity):
         self.update_registry()
 
 
-_INATURALIST_TAXA_URL = "https://api.inaturalist.org/v1/taxa?q={query}&rank=species&per_page=5"
-
-# iNaturalist controlled term for Plant Phenology (term_id=12):
-#   14 = Fruiting  13 = Flowering  15 = Flower Budding
-_PHENOLOGY_FRUITING = "term_id=12&term_value_id=14"
-_PHENOLOGY_FLOWERING = "term_id=12&term_value_id=13"
-
-
-class INaturalistImageAITask(AITaskEntity):
-    """AI task entity that fetches a plant's image URL from iNaturalist."""
-
-    _attr_supported_features = AITaskEntityFeature.GENERATE_DATA
-    _attr_has_entity_name = True
-    _attr_translation_key = "inaturalist_image"
-
-    def __init__(self, hass: HomeAssistant, entry: CropPlannerConfigEntry) -> None:
-        """Initialise the entity."""
-        coordinator: CropPlannerCoordinator = hass.data[DOMAIN][COORDINATOR]
-        self._hass = hass
-        self._entry = entry
-        self._attr_unique_id = f"{entry.entry_id}_inaturalist_image"
-        self._device_id = coordinator.device_id
-        self.entity_id = async_generate_entity_id(
-            f"{Platform.AI_TASK}.{{}}", "crop inaturalist image", current_ids={}
-        )
-
-    async def _async_generate_data(
-        self,
-        task: GenDataTask,
-        chat_log: ChatLog,  # noqa: ARG002
-    ) -> GenDataTaskResult:
-        """Fetch a representative plant image from iNaturalist.
-
-        The instructions field must contain the plant name (common or scientific).
-        Returns the image_url of the top-voted research-grade observation photo
-        nearest to the user's location, falling back to a global search if no
-        local observations are found.
-        """
-        plant_name = (task.instructions or "").strip()
-        if not plant_name:
-            msg = "No plant name provided. Pass the plant name via the instructions field."
-            raise HomeAssistantError(msg)
-
-        session = aiohttp_client.async_get_clientsession(self._hass)
-
-        # Step 1: resolve the plant name to an iNaturalist taxon ID.
-        taxa_url = _INATURALIST_TAXA_URL.format(query=plant_name.replace(" ", "+"))
-        async with session.get(taxa_url, timeout=10) as resp:
-            resp.raise_for_status()
-            taxa_data: dict = await resp.json()
-
-        results: list[dict] = taxa_data.get("results", [])
-        if not results:
-            LOGGER.debug("iNaturalist: no taxon found for %r", plant_name)
-            return GenDataTaskResult(
-                conversation_id=None,
-                data={"plant_name": plant_name, "image_url": None},
-            )
-
-        taxon: dict = results[0]
-        taxon_id: int = taxon["id"]
-        taxon_name: str = taxon.get("name", plant_name)
-        LOGGER.debug("iNaturalist: resolved %r -> taxon %s (%s)", plant_name, taxon_id, taxon_name)
-
-        # Step 2: search globally for the best fruiting/flowering close-up.
-        # Location is intentionally ignored — top-voted global photos are far more
-        # likely to be quality close-ups than the best available local shot.
-        image_url: str | None = None
-        # for phenology in (_PHENOLOGY_FRUITING, None):
-        #     image_url = await self._fetch_observation_image(
-        #         session, taxon_id, phenology=phenology,
-        #     )
-        #     if image_url:
-        #         LOGGER.debug(
-        #             "iNaturalist: found image (phenology=%s) for taxon %s",
-        #             phenology, taxon_id,
-        #         )
-        #         break
-
-        # Last resort: use the taxon's own default photo if available.
-        if image_url is None:
-            default_photo: dict = taxon.get("default_photo") or {}
-            raw_url: str | None = default_photo.get("medium_url") or default_photo.get("square_url")
-            if raw_url:
-                image_url = raw_url
-                LOGGER.debug("iNaturalist: using taxon default photo for %s", taxon_name)
-
-        LOGGER.debug("iNaturalist image for %r: %s", plant_name, image_url)
-        return GenDataTaskResult(
-            conversation_id=None,
-            data={
-                "plant_name": plant_name,
-                "taxon_name": taxon_name,
-                "taxon_id": taxon_id,
-                "image_url": image_url,
-            },
-        )
-
-    @staticmethod
-    async def _fetch_observation_image(
-        session,
-        taxon_id: int,
-        phenology: str | None = None,
-    ) -> str | None:
-        """Return the medium-size photo URL from the top-voted global observation, or None.
-
-        *phenology* is an optional iNaturalist controlled-term query string such as
-        ``_PHENOLOGY_FRUITING`` or ``_PHENOLOGY_FLOWERING``.
-        """
-        url = (
-            "https://api.inaturalist.org/v1/observations"
-            f"?taxon_id={taxon_id}&quality_grade=research&photos=true"
-            "&per_page=1&order_by=votes"
-        )
-        if phenology is not None:
-            url += f"&{phenology}"
-        async with session.get(url, timeout=10) as resp:
-            resp.raise_for_status()
-            data: dict = await resp.json()
-        observations: list[dict] = data.get("results", [])
-        if not observations:
-            return None
-        photos: list[dict] = observations[0].get("photos", [])
-        if not photos:
-            return None
-        # iNaturalist photo URLs end in /square.jpg; replace with /medium.jpg.
-        raw: str = photos[0].get("url", "")
-        return raw.replace("/square.", "/medium.") if raw else None
-
-    def update_registry(self) -> None:
-        """Associate the entity with the integration device."""
-        erreg = er.async_get(self._hass)
-        erreg.async_update_entity(self.entity_id, device_id=self._device_id)
-
-    async def async_added_to_hass(self) -> None:
-        """Register in entity registry once added to hass."""
-        self.update_registry()
-
-
 _IMAGE_PROMPT_INSTRUCTIONS = (
     "You are a botanical photographer's assistant. "
     "Given a plant name, write a concise image generation prompt (max 40 words) "
@@ -814,16 +688,21 @@ _IMAGE_PROMPT_INSTRUCTIONS = (
     "recognisable fruit or flower. "
     "The subject should fill the frame against a neutral background. "
     "Be specific about the species and the part of the plant to depict. "
-    "Return only the prompt text, nothing else."
+    "Return your prompt in the 'response' field."
 )
 
+_IMAGE_PROMPT_SCHEMA = vol.Schema({vol.Required("response"): str})
+
+
 class GeneratePlantImageAITask(AITaskEntity):
-    """AI task entity that generates a plant image using an AI image generation model.
+    """
+    AI task entity that generates a plant image using an AI image generation model.
 
     Workflow:
     1. Ask the configured LLM to craft a focused botanical image-generation prompt.
     2. Delegate to a GENERATE_IMAGE-capable ai_task entity.
-    3. Save the returned bytes under <config>/www/crop_planner/.
+    3. Copy the returned image from the HA media store to www/crop_planner/ so
+       the URL is permanent (the signed media-source URL expires after ~1 hour).
     4. Return the /local/ URL so it can be stored on the crop entity.
     """
 
@@ -847,10 +726,10 @@ class GeneratePlantImageAITask(AITaskEntity):
         task: GenDataTask,
         chat_log: ChatLog,  # noqa: ARG002
     ) -> GenDataTaskResult:
-        """Generate a plant image and return its local URL."""
+        """Generate a plant image and return its permanent /local/ URL."""
         plant_name = (task.instructions or "").strip()
         if not plant_name:
-            msg = "No plant name provided. Pass the plant name via the instructions field."
+            msg = "No plant name provided. Pass it via the instructions field."
             raise HomeAssistantError(msg)
 
         # Step 1: build a focused image-generation prompt via the text LLM.
@@ -864,12 +743,9 @@ class GeneratePlantImageAITask(AITaskEntity):
             task_name=task.name,
             entity_id=text_delegate,
             instructions=f"{_IMAGE_PROMPT_INSTRUCTIONS}\n\nPlant name: {plant_name}",
+            structure=_IMAGE_PROMPT_SCHEMA,
         )
-        raw_data = prompt_result.data or {}
-        if isinstance(raw_data, str):
-            image_prompt: str = raw_data.strip()
-        else:
-            image_prompt = (raw_data.get("response") or "").strip()
+        image_prompt: str = ((prompt_result.data or {}).get("response") or "").strip()
         if not image_prompt:
             # Fallback: construct a simple prompt ourselves.
             image_prompt = (
@@ -884,7 +760,7 @@ class GeneratePlantImageAITask(AITaskEntity):
             msg = (
                 "No image-generation AI task entity available. "
                 "Set up an AI integration that supports image generation "
-                "(e.g. OpenAI with DALL-E) first."
+                "(e.g. Google AI with an image model) first."
             )
             raise HomeAssistantError(msg)
 
@@ -898,13 +774,36 @@ class GeneratePlantImageAITask(AITaskEntity):
             msg = "Image generation returned no data."
             raise HomeAssistantError(msg)
 
-        # async_generate_image returns a ServiceResponse dict with a signed 'url'.
-        image_url: str | None = image_result.get("url")
+        # async_generate_image returns a ServiceResponse dict with a signed 'url'
+        # that expires after ~1 hour. Copy the file to www/crop_planner/ so the
+        # /local/ URL is permanent.
+        signed_url: str | None = image_result.get("url")
+        if not signed_url:
+            msg = "Image generation returned no URL."
+            raise HomeAssistantError(msg)
+
+        image_url = await self._hass.async_add_executor_job(
+            self._persist_image, signed_url
+        )
         LOGGER.debug("Generated image for %r: %s", plant_name, image_url)
         return GenDataTaskResult(
             conversation_id=None,
             data={"plant_name": plant_name, "image_url": image_url},
         )
+
+    def _persist_image(self, signed_url: str) -> str:
+        """
+        Copy the generated image to www/crop_planner/ and return the /local/ URL.
+
+        Runs in an executor thread because it performs blocking file I/O.
+        """
+        url_path = urlparse(signed_url).path  # /ai_task/image/<filename>.png
+        filename = pathlib.Path(url_path).name
+        src = pathlib.Path(self._hass.config.config_dir) / url_path.lstrip("/")
+        dst_dir = pathlib.Path(self._hass.config.config_dir) / "www" / "crop_planner"
+        dst_dir.mkdir(parents=True, exist_ok=True)
+        shutil.copy2(src, dst_dir / filename)
+        return f"/local/crop_planner/{filename}"
 
     def update_registry(self) -> None:
         """Associate the entity with the integration device."""
