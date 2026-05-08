@@ -76,14 +76,17 @@ async def _wait_for_reload(coordinator: CropPlannerCoordinator) -> bool:
     return False
 
 
-async def _enrich_crop(
+async def _enrich_crops_after_add(
     hass: HomeAssistant,
     coordinator: CropPlannerCoordinator,
-    crop_id: str,
-    crop_name: str,
-    species: str | None,
 ) -> None:
-    """Run GuessSpecies and GeneratePlantImage AI tasks and patch the crop entry."""
+    """
+    Trigger FillCropFieldsAITask after a crop is added.
+
+    Waits for the config entry to finish reloading (the add causes a reload),
+    then delegates to the enrich_crop_data entity which fills species, phases,
+    and generates images for any crops that are missing them.
+    """
     if not await _wait_for_reload(coordinator):
         LOGGER.warning(
             "Config entry did not return to LOADED state; skipping enrichment"
@@ -91,75 +94,20 @@ async def _enrich_crop(
         return
 
     entry = coordinator.config_entry
+    entity_id = _resolve_ai_task_entity_id(hass, f"{entry.entry_id}_enrich_crop_data")
+    if entity_id is None:
+        LOGGER.debug("enrich_crop_data entity not found; skipping auto-enrichment")
+        return
 
-    fields: dict = {}
-
-    # Step 1: guess species if not already provided.
-    if not species:
-        entity_id = _resolve_ai_task_entity_id(hass, f"{entry.entry_id}_guess_species")
-        if entity_id:
-            try:
-                result = await async_generate_data(
-                    hass,
-                    task_name="guess_species",
-                    entity_id=entity_id,
-                    instructions=crop_name,
-                )
-                species = (result.data or {}).get("species") or species
-                LOGGER.debug("Guessed species for %r: %s", crop_name, species)
-                if species:
-                    fields["species"] = species
-            except Exception as exc:  # noqa: BLE001
-                LOGGER.warning("GuessSpeciesAITask failed for %r: %s", crop_name, exc)
-        else:
-            LOGGER.debug("GuessSpeciesAITask entity not found; skipping species guess")
-
-    # Step 2: generate an AI image using the resolved species name (or crop name).
-    image_query = species or crop_name
-    entity_id = _resolve_ai_task_entity_id(
-        hass, f"{entry.entry_id}_generate_plant_image"
-    )
-    if entity_id:
-        try:
-            result = await async_generate_data(
-                hass,
-                task_name="generate_plant_image",
-                entity_id=entity_id,
-                instructions=image_query,
-            )
-            image_url: str | None = (result.data or {}).get("image_url")
-            LOGGER.debug("Generated image for %r: %s", image_query, image_url)
-            if image_url:
-                fields["image_url"] = image_url
-        except Exception as exc:  # noqa: BLE001
-            LOGGER.warning(
-                "GeneratePlantImageAITask failed for %r: %s", image_query, exc
-            )
-    else:
-        LOGGER.debug(
-            "GeneratePlantImageAITask entity not found; skipping image generation"
+    try:
+        await async_generate_data(
+            hass,
+            task_name="enrich_crop_data",
+            entity_id=entity_id,
+            instructions="",
         )
-
-    # Single patch at the end to avoid triggering multiple reloads.
-    if fields:
-        _patch_crop(hass, coordinator, crop_id, fields)
-
-
-def _patch_crop(
-    hass: HomeAssistant,
-    coordinator: CropPlannerCoordinator,
-    crop_id: str,
-    fields: dict,
-) -> None:
-    """Merge *fields* into the crop with the given id and persist to config entry."""
-    entry = coordinator.config_entry
-    crops = [
-        {**c, **fields} if c.get("id") == crop_id else c
-        for c in entry.data.get(CONF_CROPS, [])
-    ]
-    hass.config_entries.async_update_entry(
-        entry, data={**entry.data, CONF_CROPS: crops}
-    )
+    except Exception as exc:  # noqa: BLE001
+        LOGGER.warning("Auto-enrichment after crop add failed: %s", exc)
 
 
 def register_component_services(component: EntityComponent) -> None:
@@ -195,11 +143,7 @@ def register_component_services(component: EntityComponent) -> None:
         hass.config_entries.async_update_entry(
             coordinator.config_entry, data=new_data, unique_id=call.context.id
         )
-        hass.async_create_task(
-            _enrich_crop(
-                hass, coordinator, crop_data.id, crop_data.name, crop_data.species
-            )
-        )
+        hass.async_create_task(_enrich_crops_after_add(hass, coordinator))
 
     async_register_admin_service(
         _component.hass,
