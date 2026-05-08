@@ -14,6 +14,7 @@ from homeassistant.components.ai_task import (
     GenDataTask,
     GenDataTaskResult,
     async_generate_data,
+    async_generate_image,
 )
 from homeassistant.components.ai_task.const import DATA_COMPONENT
 from homeassistant.components.persistent_notification import async_create
@@ -173,6 +174,18 @@ _FILL_FIELDS_SCHEMA = vol.Schema(
 
 def _find_delegate_entity_id(hass: HomeAssistant) -> str | None:
     """Return an ai_task entity supporting GENERATE_DATA, excluding our own entities."""
+    return _find_delegate_entity_id_for_feature(hass, AITaskEntityFeature.GENERATE_DATA)
+
+
+def _find_image_delegate_entity_id(hass: HomeAssistant) -> str | None:
+    """Return an ai_task entity supporting GENERATE_IMAGE, excluding our own entities."""
+    return _find_delegate_entity_id_for_feature(hass, AITaskEntityFeature.GENERATE_IMAGE)
+
+
+def _find_delegate_entity_id_for_feature(
+    hass: HomeAssistant, feature: AITaskEntityFeature
+) -> str | None:
+    """Return the first external ai_task entity that supports *feature*."""
     entity_registry = er.async_get(hass)
     our_entity_ids = {
         entry.entity_id
@@ -183,10 +196,7 @@ def _find_delegate_entity_id(hass: HomeAssistant) -> str | None:
     if component is None:
         return None
     for entity in component.entities:
-        if (
-            entity.entity_id not in our_entity_ids
-            and AITaskEntityFeature.GENERATE_DATA in entity.supported_features
-        ):
+        if entity.entity_id not in our_entity_ids and feature in entity.supported_features:
             return entity.entity_id
     return None
 
@@ -203,6 +213,7 @@ async def async_setup_entry(
             FillCropFieldsAITask(hass, entry),
             GuessSpeciesAITask(hass, entry),
             INaturalistImageAITask(hass, entry),
+            GeneratePlantImageAITask(hass, entry),
         ]
     )
     return True
@@ -475,53 +486,59 @@ class FillCropFieldsAITask(AITaskEntity):
 
         # Track which crops need an image before we mutate anything.
         needs_image: set[str] = {
-            c["id"] for c in crops if not c.get("image_url") and not c.get("species")
+            c["id"] for c in crops if not c.get("image_url")
         }
 
         incomplete = [c for c in crops if self._crop_is_incomplete(c)]
-        if not incomplete:
+        if not incomplete and not needs_image:
             LOGGER.debug("All crops are already complete; nothing to fill.")
             return GenDataTaskResult(
                 conversation_id=None,
                 data={"crops": [], "summary": "All crops are already complete."},
             )
 
-        delegate_entity_id = _find_delegate_entity_id(self._hass)
-        if delegate_entity_id is None:
-            msg = (
-                "No AI task entity available to process the request. "
-                "Set up an AI assistant integration (e.g. Google AI, OpenAI) first."
+        result = GenDataTaskResult(conversation_id=None, data={"crops": [], "summary": ""})
+        summary = ""
+
+        if incomplete:
+            delegate_entity_id = _find_delegate_entity_id(self._hass)
+            if delegate_entity_id is None:
+                msg = (
+                    "No AI task entity available to process the request. "
+                    "Set up an AI assistant integration (e.g. Google AI, OpenAI) first."
+                )
+                raise HomeAssistantError(msg)
+
+            context = _build_context(self._hass, incomplete, [])
+            instructions = f"{_FILL_FIELDS_INSTRUCTIONS}\n\nContext:\n{context}"
+
+            LOGGER.debug("Delegating crop field filling to %s", delegate_entity_id)
+            result = await async_generate_data(
+                self._hass,
+                task_name=task.name,
+                entity_id=delegate_entity_id,
+                instructions=instructions,
+                structure=_FILL_FIELDS_SCHEMA,
             )
-            raise HomeAssistantError(msg)
+            LOGGER.debug("Received fill-fields response: %s", result)
 
-        context = _build_context(self._hass, incomplete, [])
-        instructions = f"{_FILL_FIELDS_INSTRUCTIONS}\n\nContext:\n{context}"
+            data: dict = result.data or {}
+            suggestions: list[dict] = data.get("crops", [])
+            summary = data.get("summary", "")
+            LOGGER.debug(
+                "Fill-fields suggestions received (%d): %s", len(suggestions), suggestions
+            )
 
-        LOGGER.debug("Delegating crop field filling to %s", delegate_entity_id)
-        result = await async_generate_data(
-            self._hass,
-            task_name=task.name,
-            entity_id=delegate_entity_id,
-            instructions=instructions,
-            structure=_FILL_FIELDS_SCHEMA,
-        )
-        LOGGER.debug("Received fill-fields response: %s", result)
+            if suggestions:
+                updated_count = self._merge_suggestions_in_memory(crops, suggestions)
+                LOGGER.debug("Filled fields for %d crop(s).", updated_count)
+            else:
+                LOGGER.debug("No suggestions returned by LLM.")
 
-        data: dict = result.data or {}
-        suggestions: list[dict] = data.get("crops", [])
-        summary: str = data.get("summary", "")
-        LOGGER.debug(
-            "Fill-fields suggestions received (%d): %s", len(suggestions), suggestions
-        )
-
-        if suggestions:
-            updated_count = self._merge_suggestions(crops, suggestions)
-            LOGGER.debug("Filled fields for %d crop(s).", updated_count)
-        else:
-            LOGGER.debug("No suggestions returned by LLM.")
-
-        # Fetch iNaturalist images for crops that had neither image nor species.
+        # Fetch AI-generated images before saving, so the entity isn't reloaded mid-flight.
         await self._fetch_missing_images(crops, needs_image)
+
+        self._save_crops(crops)
 
         if summary:
             async_create(
@@ -536,17 +553,16 @@ class FillCropFieldsAITask(AITaskEntity):
     async def _fetch_missing_images(
         self, crops: list[dict[str, Any]], crop_ids: set[str]
     ) -> None:
-        """Fetch iNaturalist images for crops in *crop_ids* and persist."""
+        """Generate AI images for crops in *crop_ids* that still lack one."""
         if not crop_ids:
             return
         image_entity_id = er.async_get(self._hass).async_get_entity_id(
-            Platform.AI_TASK, DOMAIN, f"{self._entry.entry_id}_inaturalist_image"
+            Platform.AI_TASK, DOMAIN, f"{self._entry.entry_id}_generate_plant_image"
         )
         if image_entity_id is None:
-            LOGGER.debug("INaturalistImageAITask entity not found; skipping image fetch")
+            LOGGER.debug("GeneratePlantImageAITask entity not found; skipping image fetch")
             return
 
-        updated = False
         for crop in crops:
             if crop["id"] not in crop_ids or crop.get("image_url"):
                 continue
@@ -554,29 +570,16 @@ class FillCropFieldsAITask(AITaskEntity):
             try:
                 img_result = await async_generate_data(
                     self._hass,
-                    task_name="inaturalist_image",
+                    task_name="generate_plant_image",
                     entity_id=image_entity_id,
                     instructions=query,
                 )
                 image_url: str | None = (img_result.data or {}).get("image_url")
-                LOGGER.debug("iNaturalist image for %r: %s", query, image_url)
+                LOGGER.debug("Generated image for %r: %s", query, image_url)
                 if image_url:
                     crop["image_url"] = image_url
-                    updated = True
             except Exception as exc:  # noqa: BLE001
-                LOGGER.warning("iNaturalist image fetch failed for %r: %s", query, exc)
-
-        if updated:
-            current_crops = list(self._entry.data.get(CONF_CROPS, []))
-            images_by_id = {c["id"]: c.get("image_url") for c in crops if c.get("image_url")}
-            patched = [
-                {**c, "image_url": images_by_id[c["id"]]} if c["id"] in images_by_id else c
-                for c in current_crops
-            ]
-            self._hass.config_entries.async_update_entry(
-                self._entry,
-                data={**self._entry.data, CONF_CROPS: patched},
-            )
+                LOGGER.warning("AI image generation failed for %r: %s", query, exc)
 
     @staticmethod
     def _crop_is_incomplete(crop: dict[str, Any]) -> bool:
@@ -614,10 +617,10 @@ class FillCropFieldsAITask(AITaskEntity):
                     )
         return changed
 
-    def _merge_suggestions(
+    def _merge_suggestions_in_memory(
         self, crops: list[dict[str, Any]], suggestions: list[dict[str, Any]]
     ) -> int:
-        """Merge AI suggestions into the crops list; never overwrite existing data."""
+        """Merge AI suggestions into the crops list in-memory; never overwrite existing data."""
         entity_registry = er.async_get(self._hass)
         suggestions_by_crop_id: dict[str, dict] = {}
         for suggestion in suggestions:
@@ -646,12 +649,14 @@ class FillCropFieldsAITask(AITaskEntity):
             if changed:
                 updated += 1
 
-        if updated:
-            self._hass.config_entries.async_update_entry(
-                self._entry,
-                data={**self._entry.data, CONF_CROPS: crops},
-            )
         return updated
+
+    def _save_crops(self, crops: list[dict[str, Any]]) -> None:
+        """Persist the crops list to the config entry."""
+        self._hass.config_entries.async_update_entry(
+            self._entry,
+            data={**self._entry.data, CONF_CROPS: crops},
+        )
 
     def update_registry(self) -> None:
         """Associate the entity with the integration device."""
@@ -707,8 +712,6 @@ class INaturalistImageAITask(AITaskEntity):
             raise HomeAssistantError(msg)
 
         session = aiohttp_client.async_get_clientsession(self._hass)
-        latitude = self._hass.config.latitude
-        longitude = self._hass.config.longitude
 
         # Step 1: resolve the plant name to an iNaturalist taxon ID.
         taxa_url = _INATURALIST_TAXA_URL.format(query=plant_name.replace(" ", "+"))
@@ -729,23 +732,20 @@ class INaturalistImageAITask(AITaskEntity):
         taxon_name: str = taxon.get("name", plant_name)
         LOGGER.debug("iNaturalist: resolved %r -> taxon %s (%s)", plant_name, taxon_id, taxon_name)
 
-        # Step 2: search for a fruiting or flowering close-up, progressively relaxing
-        # the location radius and phenology filter until a photo is found.
+        # Step 2: search globally for the best fruiting/flowering close-up.
+        # Location is intentionally ignored — top-voted global photos are far more
+        # likely to be quality close-ups than the best available local shot.
         image_url: str | None = None
-        for phenology in (_PHENOLOGY_FRUITING, _PHENOLOGY_FLOWERING, None):
-            for radius in (500, 2000, None):
-                image_url = await self._fetch_observation_image(
-                    session, taxon_id, latitude, longitude,
-                    radius=radius, phenology=phenology,
-                )
-                if image_url:
-                    LOGGER.debug(
-                        "iNaturalist: found image (phenology=%s, radius=%s) for taxon %s",
-                        phenology, radius, taxon_id,
-                    )
-                    break
-            if image_url:
-                break
+        # for phenology in (_PHENOLOGY_FRUITING, None):
+        #     image_url = await self._fetch_observation_image(
+        #         session, taxon_id, phenology=phenology,
+        #     )
+        #     if image_url:
+        #         LOGGER.debug(
+        #             "iNaturalist: found image (phenology=%s) for taxon %s",
+        #             phenology, taxon_id,
+        #         )
+        #         break
 
         # Last resort: use the taxon's own default photo if available.
         if image_url is None:
@@ -770,24 +770,18 @@ class INaturalistImageAITask(AITaskEntity):
     async def _fetch_observation_image(
         session,
         taxon_id: int,
-        lat: float,
-        lng: float,
-        radius: int | None,
         phenology: str | None = None,
     ) -> str | None:
-        """Return the medium-size photo URL from the top observation, or None.
+        """Return the medium-size photo URL from the top-voted global observation, or None.
 
         *phenology* is an optional iNaturalist controlled-term query string such as
-        ``_PHENOLOGY_FRUITING`` or ``_PHENOLOGY_FLOWERING`` that biases the search
-        toward close-up fruit or flower shots.
+        ``_PHENOLOGY_FRUITING`` or ``_PHENOLOGY_FLOWERING``.
         """
         url = (
             "https://api.inaturalist.org/v1/observations"
             f"?taxon_id={taxon_id}&quality_grade=research&photos=true"
-            f"&per_page=1&order_by=votes&lat={lat}&lng={lng}"
+            "&per_page=1&order_by=votes"
         )
-        if radius is not None:
-            url += f"&radius={radius}"
         if phenology is not None:
             url += f"&{phenology}"
         async with session.get(url, timeout=10) as resp:
@@ -802,6 +796,115 @@ class INaturalistImageAITask(AITaskEntity):
         # iNaturalist photo URLs end in /square.jpg; replace with /medium.jpg.
         raw: str = photos[0].get("url", "")
         return raw.replace("/square.", "/medium.") if raw else None
+
+    def update_registry(self) -> None:
+        """Associate the entity with the integration device."""
+        erreg = er.async_get(self._hass)
+        erreg.async_update_entity(self.entity_id, device_id=self._device_id)
+
+    async def async_added_to_hass(self) -> None:
+        """Register in entity registry once added to hass."""
+        self.update_registry()
+
+
+_IMAGE_PROMPT_INSTRUCTIONS = (
+    "You are a botanical photographer's assistant. "
+    "Given a plant name, write a concise image generation prompt (max 40 words) "
+    "that will produce a close-up, centered photograph of the plant's most "
+    "recognisable fruit or flower. "
+    "The subject should fill the frame against a neutral background. "
+    "Be specific about the species and the part of the plant to depict. "
+    "Return only the prompt text, nothing else."
+)
+
+class GeneratePlantImageAITask(AITaskEntity):
+    """AI task entity that generates a plant image using an AI image generation model.
+
+    Workflow:
+    1. Ask the configured LLM to craft a focused botanical image-generation prompt.
+    2. Delegate to a GENERATE_IMAGE-capable ai_task entity.
+    3. Save the returned bytes under <config>/www/crop_planner/.
+    4. Return the /local/ URL so it can be stored on the crop entity.
+    """
+
+    _attr_supported_features = AITaskEntityFeature.GENERATE_DATA
+    _attr_has_entity_name = True
+    _attr_translation_key = "generate_plant_image"
+
+    def __init__(self, hass: HomeAssistant, entry: CropPlannerConfigEntry) -> None:
+        """Initialise the entity."""
+        coordinator: CropPlannerCoordinator = hass.data[DOMAIN][COORDINATOR]
+        self._hass = hass
+        self._entry = entry
+        self._attr_unique_id = f"{entry.entry_id}_generate_plant_image"
+        self._device_id = coordinator.device_id
+        self.entity_id = async_generate_entity_id(
+            f"{Platform.AI_TASK}.{{}}", "crop generate plant image", current_ids={}
+        )
+
+    async def _async_generate_data(
+        self,
+        task: GenDataTask,
+        chat_log: ChatLog,  # noqa: ARG002
+    ) -> GenDataTaskResult:
+        """Generate a plant image and return its local URL."""
+        plant_name = (task.instructions or "").strip()
+        if not plant_name:
+            msg = "No plant name provided. Pass the plant name via the instructions field."
+            raise HomeAssistantError(msg)
+
+        # Step 1: build a focused image-generation prompt via the text LLM.
+        text_delegate = _find_delegate_entity_id(self._hass)
+        if text_delegate is None:
+            msg = "No text AI task entity available to build the image prompt."
+            raise HomeAssistantError(msg)
+
+        prompt_result = await async_generate_data(
+            self._hass,
+            task_name=task.name,
+            entity_id=text_delegate,
+            instructions=f"{_IMAGE_PROMPT_INSTRUCTIONS}\n\nPlant name: {plant_name}",
+        )
+        raw_data = prompt_result.data or {}
+        if isinstance(raw_data, str):
+            image_prompt: str = raw_data.strip()
+        else:
+            image_prompt = (raw_data.get("response") or "").strip()
+        if not image_prompt:
+            # Fallback: construct a simple prompt ourselves.
+            image_prompt = (
+                f"Close-up centered photograph of {plant_name} fruit or flower, "
+                "filling the frame, neutral background, sharp detail."
+            )
+        LOGGER.debug("Image generation prompt for %r: %s", plant_name, image_prompt)
+
+        # Step 2: delegate to a GENERATE_IMAGE entity.
+        image_delegate = _find_image_delegate_entity_id(self._hass)
+        if image_delegate is None:
+            msg = (
+                "No image-generation AI task entity available. "
+                "Set up an AI integration that supports image generation "
+                "(e.g. OpenAI with DALL-E) first."
+            )
+            raise HomeAssistantError(msg)
+
+        image_result = await async_generate_image(
+            self._hass,
+            task_name=task.name,
+            entity_id=image_delegate,
+            instructions=image_prompt,
+        )
+        if not image_result:
+            msg = "Image generation returned no data."
+            raise HomeAssistantError(msg)
+
+        # async_generate_image returns a ServiceResponse dict with a signed 'url'.
+        image_url: str | None = image_result.get("url")
+        LOGGER.debug("Generated image for %r: %s", plant_name, image_url)
+        return GenDataTaskResult(
+            conversation_id=None,
+            data={"plant_name": plant_name, "image_url": image_url},
+        )
 
     def update_registry(self) -> None:
         """Associate the entity with the integration device."""

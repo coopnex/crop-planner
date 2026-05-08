@@ -30,6 +30,9 @@
             },
             "inaturalist_image": {
                 "name": "Obtenir imatge d'iNaturalist"
+            },
+            "generate_plant_image": {
+                "name": "Generar imatge de la planta"
             }
         },
         "button": {
