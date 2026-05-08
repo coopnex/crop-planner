@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import string
 from dataclasses import dataclass, field
 from datetime import date
 from typing import Any
@@ -26,9 +27,10 @@ def create_crop_data(data: Any) -> CropData:
         for phase_name, phase_data in data.get("phases", {}).items()
         if phase_name in CROP_PHASES
     }
+    name_:str = data["name"]
     return CropData(
         id=data["id"],
-        name=data["name"],
+        name=name_.capitalize(),
         quantity=data["quantity"],
         species=data.get("species", None),
         image_url=data.get("image_url", None),

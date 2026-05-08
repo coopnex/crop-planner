@@ -577,9 +577,9 @@ class FillCropFieldsAITask(AITaskEntity):
             return
 
         for crop in crops:
-            if crop["id"] not in crop_ids or crop.get("image_url"):
-                continue
-            query = crop.get("species") or crop.get("name", "")
+            # if crop["id"] not in crop_ids or crop.get("image_url"):
+            #     continue
+            query = crop.get("name") or crop.get("species", "")
             try:
                 img_result = await async_generate_data(
                     self._hass,
@@ -799,7 +799,7 @@ class GeneratePlantImageAITask(AITaskEntity):
         """
         url_path = urlparse(signed_url).path  # /ai_task/image/<filename>.png
         filename = pathlib.Path(url_path).name
-        src = pathlib.Path(self._hass.config.config_dir) / url_path.lstrip("/")
+        src = pathlib.Path(self._hass.config.config_dir) / "media" / url_path.lstrip("/")
         dst_dir = pathlib.Path(self._hass.config.config_dir) / "www" / "crop_planner"
         dst_dir.mkdir(parents=True, exist_ok=True)
         shutil.copy2(src, dst_dir / filename)

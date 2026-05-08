@@ -8,7 +8,7 @@ from typing import TYPE_CHECKING
 
 import voluptuous as vol
 from homeassistant.components.ai_task import async_generate_data
-from homeassistant.config_entries import ConfigEntryState
+from homeassistant.config_entries import ConfigEntryState, ConfigEntry
 from homeassistant.const import SERVICE_RELOAD, Platform
 from homeassistant.core import HomeAssistant, ServiceCall, callback
 from homeassistant.helpers import config_validation as cv
@@ -29,7 +29,7 @@ from .crop import CropData
 if TYPE_CHECKING:
     from homeassistant.helpers.entity_component import EntityComponent
 
-    from .coordinator import CropPlannerCoordinator
+    from .coordinator import CropPlannerCoordinator, CropPlannerData
 
 
 def _parse_dd_mmm(value: str) -> date | None:
@@ -96,26 +96,22 @@ async def _enrich_crop(
 
     # Step 1: guess species if not already provided.
     if not species:
-        entity_id = _resolve_ai_task_entity_id(hass, f"{entry.entry_id}_guess_species")
-        if entity_id:
-            try:
-                result = await async_generate_data(
-                    hass,
-                    task_name="guess_species",
-                    entity_id=entity_id,
-                    instructions=crop_name,
-                )
-                species = (result.data or {}).get("species") or species
-                LOGGER.debug("Guessed species for %r: %s", crop_name, species)
-                if species:
-                    fields["species"] = species
-            except Exception as exc:  # noqa: BLE001
-                LOGGER.warning("GuessSpeciesAITask failed for %r: %s", crop_name, exc)
-        else:
-            LOGGER.debug("GuessSpeciesAITask entity not found; skipping species guess")
+        species = await invoke_guess_species_task(crop_name, entry, hass)
+        if species:
+            fields["species"] = species
 
     # Step 2: generate an AI image using the resolved species name (or crop name).
-    image_query = species or crop_name
+    image_url = await invoke_image_generation_task(crop_name, entry, hass)
+    if image_url:
+        fields["image_url"] = image_url
+
+    # Single patch at the end to avoid triggering multiple reloads.
+    if fields:
+        _patch_crop(hass, coordinator, crop_id, fields)
+
+
+async def invoke_image_generation_task(crop_name: str, entry: ConfigEntry[CropPlannerData], hass: HomeAssistant):
+    image_query = crop_name
     entity_id = _resolve_ai_task_entity_id(
         hass, f"{entry.entry_id}_generate_plant_image"
     )
@@ -130,7 +126,7 @@ async def _enrich_crop(
             image_url: str | None = (result.data or {}).get("image_url")
             LOGGER.debug("Generated image for %r: %s", image_query, image_url)
             if image_url:
-                fields["image_url"] = image_url
+                return image_url
         except Exception as exc:  # noqa: BLE001
             LOGGER.warning(
                 "GeneratePlantImageAITask failed for %r: %s", image_query, exc
@@ -139,10 +135,28 @@ async def _enrich_crop(
         LOGGER.debug(
             "GeneratePlantImageAITask entity not found; skipping image generation"
         )
+        return None
 
-    # Single patch at the end to avoid triggering multiple reloads.
-    if fields:
-        _patch_crop(hass, coordinator, crop_id, fields)
+
+async def invoke_guess_species_task(crop_name: str, entry: ConfigEntry[CropPlannerData], hass: HomeAssistant):
+    entity_id = _resolve_ai_task_entity_id(hass, f"{entry.entry_id}_guess_species")
+    if entity_id:
+        try:
+            result = await async_generate_data(
+                hass,
+                task_name="guess_species",
+                entity_id=entity_id,
+                instructions=crop_name,
+            )
+            species = (result.data or {}).get("species")
+            LOGGER.debug("Guessed species for %r: %s", crop_name, species)
+            if species:
+                return species
+        except Exception as exc:  # noqa: BLE001
+            LOGGER.warning("GuessSpeciesAITask failed for %r: %s", crop_name, exc)
+    else:
+        LOGGER.debug("GuessSpeciesAITask entity not found; skipping species guess")
+        return None
 
 
 def _patch_crop(
@@ -178,9 +192,10 @@ def register_component_services(component: EntityComponent) -> None:
         """Create a new crop entry and enrich it with AI-derived species and image."""
         hass = call.hass
         coordinator: CropPlannerCoordinator = hass.data[DOMAIN][COORDINATOR]
+        name_:str = call.data[ATTR_NAME]
         crop_data = CropData(
             id=call.context.id,
-            name=call.data[ATTR_NAME],
+            name=name_.capitalize(),
             quantity=call.data.get(ATTR_QUANTITY, 1),
             species=call.data.get(ATTR_SPECIES, None),
         )
