@@ -23,26 +23,24 @@ async def setup_integration(hass):
 
 async def test_create_crop_persists_in_config_entry(hass, setup_integration):
     """create_crop service stores the new crop in the config entry data."""
-    await hass.services.async_call(
-        DOMAIN,
-        "create_crop",
-        {"name": "Basil", "quantity": 2},
-        blocking=True,
-    )
-    await hass.async_block_till_done()
+    with patch("custom_components.crop.service._enrich_crop", new_callable=AsyncMock):
+        await hass.services.async_call(
+            DOMAIN,
+            "create_crop",
+            {"name": "Basil", "quantity": 2},
+            blocking=True,
+        )
+        await hass.async_block_till_done()
 
     crops = setup_integration.data.get("crops", [])
     assert any(c["name"] == "Basil" for c in crops)
 
 
-async def test_create_crop_without_species_uses_name_as_hint(hass, setup_integration):
-    """Without a species, OpenPlantbook is queried using the crop name as hint."""
-    mock_helper = AsyncMock()
-    mock_helper.openplantbook_get = AsyncMock(return_value=None)
+async def test_create_crop_triggers_enrichment(hass, setup_integration):
+    """create_crop schedules the AI enrichment task after adding a crop."""
     with patch(
-        "custom_components.crop.coordinator.CropPlannerCoordinator.opb_helper",
-        return_value=mock_helper,
-    ):
+        "custom_components.crop.service._enrich_crop", new_callable=AsyncMock
+    ) as mock_enrich:
         await hass.services.async_call(
             DOMAIN,
             "create_crop",
@@ -51,47 +49,37 @@ async def test_create_crop_without_species_uses_name_as_hint(hass, setup_integra
         )
         await hass.async_block_till_done()
 
-    mock_helper.openplantbook_get.assert_called_once_with("Oregano")
+    mock_enrich.assert_called_once()
 
 
-async def test_create_crop_with_species_sets_image_url(hass, setup_integration):
-    """image_url is stored on the crop when OpenPlantbook returns data."""
-    opb_response = {"image_url": "https://example.com/tomato.jpg"}
-    mock_helper = AsyncMock()
-    mock_helper.openplantbook_get = AsyncMock(return_value=opb_response)
-    with patch(
-        "custom_components.crop.coordinator.CropPlannerCoordinator.opb_helper",
-        return_value=mock_helper,
-    ):
+async def test_create_crop_stores_provided_species(hass, setup_integration):
+    """Species provided at creation time is stored on the crop."""
+    with patch("custom_components.crop.service._enrich_crop", new_callable=AsyncMock):
         await hass.services.async_call(
             DOMAIN,
             "create_crop",
-            {"name": "Cherry Tomato", "quantity": 5, "species": "Tomato"},
+            {"name": "Cherry Tomato", "quantity": 5, "species": "Solanum lycopersicum"},
             blocking=True,
         )
         await hass.async_block_till_done()
 
     crops = setup_integration.data.get("crops", [])
-    crop = next(c for c in crops if c["name"] == "Cherry Tomato")
-    assert crop["image_url"] == "https://example.com/tomato.jpg"
+    crop = next(c for c in crops if c["name"].lower() == "cherry tomato")
+    assert crop["species"] == "Solanum lycopersicum"
 
 
-async def test_create_crop_with_unavailable_openplantbook(hass, setup_integration):
-    """Crop is still created when OpenPlantbook returns None (unavailable/not found)."""
-    mock_helper = AsyncMock()
-    mock_helper.openplantbook_get = AsyncMock(return_value=None)
-    with patch(
-        "custom_components.crop.coordinator.CropPlannerCoordinator.opb_helper",
-        return_value=mock_helper,
-    ):
+async def test_create_crop_without_species_has_none(hass, setup_integration):
+    """Crop is created with species=None when none is provided."""
+    with patch("custom_components.crop.service._enrich_crop", new_callable=AsyncMock):
         await hass.services.async_call(
             DOMAIN,
             "create_crop",
-            {"name": "Mint", "quantity": 3, "species": "Mentha"},
+            {"name": "Mint", "quantity": 3},
             blocking=True,
         )
         await hass.async_block_till_done()
 
     crops = setup_integration.data.get("crops", [])
     crop = next(c for c in crops if c["name"] == "Mint")
+    assert crop.get("species") is None
     assert crop.get("image_url") is None
