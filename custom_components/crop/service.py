@@ -7,7 +7,6 @@ from datetime import UTC, date, datetime
 from typing import TYPE_CHECKING
 
 import voluptuous as vol
-from homeassistant.components.ai_task import async_generate_data
 from homeassistant.config_entries import ConfigEntry, ConfigEntryState
 from homeassistant.const import SERVICE_RELOAD, Platform
 from homeassistant.core import HomeAssistant, ServiceCall, callback
@@ -119,11 +118,16 @@ async def invoke_enrich_crops_task(
     entity_id = _resolve_ai_task_entity_id(hass, f"{entry.entry_id}_enrich_crop_data")
     if entity_id:
         try:
-            result = await async_generate_data(
-                hass,
-                task_name="enrich_crop_data",
-                entity_id=entity_id,
-                instructions="",
+            result = await hass.services.async_call(
+                "ai_task",
+                "generate_data",
+                {
+                    "task_name": "enrich_crop_data",
+                    "entity_id": entity_id,
+                    "instructions": "",
+                },
+                blocking=True,
+                return_response=True,
             )
             LOGGER.debug("Enriched crop data for %s with result %r", crop_id, result)
         except Exception as exc:  # noqa: BLE001
@@ -143,13 +147,18 @@ async def invoke_image_generation_task(
     )
     if entity_id:
         try:
-            result = await async_generate_data(
-                hass,
-                task_name="generate_plant_image",
-                entity_id=entity_id,
-                instructions=image_query,
+            result = await hass.services.async_call(
+                "ai_task",
+                "generate_data",
+                {
+                    "task_name": "generate_plant_image",
+                    "entity_id": entity_id,
+                    "instructions": image_query,
+                },
+                blocking=True,
+                return_response=True,
             )
-            image_url: str | None = (result.data or {}).get("image_url")
+            image_url: str | None = (result.get("data") or {}).get("image_url")
             LOGGER.debug("Generated image for %r: %s", image_query, image_url)
             if image_url:
                 return image_url
@@ -171,13 +180,18 @@ async def invoke_guess_species_task(
     entity_id = _resolve_ai_task_entity_id(hass, f"{entry.entry_id}_guess_species")
     if entity_id:
         try:
-            result = await async_generate_data(
-                hass,
-                task_name="guess_species",
-                entity_id=entity_id,
-                instructions=crop_name,
+            result = await hass.services.async_call(
+                "ai_task",
+                "generate_data",
+                {
+                    "task_name": "guess_species",
+                    "entity_id": entity_id,
+                    "instructions": crop_name,
+                },
+                blocking=True,
+                return_response=True,
             )
-            species = (result.data or {}).get("species")
+            species = (result.get("data") or {}).get("species")
             LOGGER.debug("Guessed species for %r: %s", crop_name, species)
             if species:
                 return species
