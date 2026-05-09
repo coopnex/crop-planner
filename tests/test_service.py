@@ -23,9 +23,7 @@ async def setup_integration(hass):
 
 async def test_create_crop_persists_in_config_entry(hass, setup_integration):
     """create_crop service stores the new crop in the config entry data."""
-    with patch(
-        "custom_components.crop.service._enrich_crop", new_callable=AsyncMock
-    ):
+    with patch("custom_components.crop.service._enrich_crop", new_callable=AsyncMock):
         await hass.services.async_call(
             DOMAIN,
             "create_crop",
@@ -56,9 +54,7 @@ async def test_create_crop_triggers_enrichment(hass, setup_integration):
 
 async def test_create_crop_stores_provided_species(hass, setup_integration):
     """Species provided at creation time is stored on the crop."""
-    with patch(
-        "custom_components.crop.service._enrich_crop", new_callable=AsyncMock
-    ):
+    with patch("custom_components.crop.service._enrich_crop", new_callable=AsyncMock):
         await hass.services.async_call(
             DOMAIN,
             "create_crop",
@@ -74,9 +70,7 @@ async def test_create_crop_stores_provided_species(hass, setup_integration):
 
 async def test_create_crop_without_species_has_none(hass, setup_integration):
     """Crop is created with species=None when none is provided."""
-    with patch(
-        "custom_components.crop.service._enrich_crop", new_callable=AsyncMock
-    ):
+    with patch("custom_components.crop.service._enrich_crop", new_callable=AsyncMock):
         await hass.services.async_call(
             DOMAIN,
             "create_crop",
