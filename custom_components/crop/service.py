@@ -105,10 +105,35 @@ async def _enrich_crop(
     if image_url:
         fields["image_url"] = image_url
 
+    await invoke_enrich_crops_task(crop_id, entry, hass)
+
     # Single patch at the end to avoid triggering multiple reloads.
     if fields:
         _patch_crop(hass, coordinator, crop_id, fields)
 
+
+async def invoke_enrich_crops_task(crop_id: str, entry: ConfigEntry[CropPlannerData], hass: HomeAssistant):
+    entity_id = _resolve_ai_task_entity_id(
+        hass, f"{entry.entry_id}_enrich_crop_data"
+    )
+    if entity_id:
+        try:
+            result = await async_generate_data(
+                hass,
+                task_name="enrich_crop_data",
+                entity_id=entity_id,
+                instructions="",
+            )
+            LOGGER.debug("Enriched crop data for %s with result %r", crop_id, result)
+        except Exception as exc:  # noqa: BLE001
+            LOGGER.warning(
+                "FillCropFieldsAITask failed for %s: %s", crop_id, exc
+            )
+    else:
+        LOGGER.debug(
+            "FillCropFieldsAITask entity not found; skipping image generation"
+        )
+        return None
 
 async def invoke_image_generation_task(crop_name: str, entry: ConfigEntry[CropPlannerData], hass: HomeAssistant):
     image_query = crop_name

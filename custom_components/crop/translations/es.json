@@ -56,7 +56,9 @@
         "state": {
           "idle": "En espera",
           "proposing_tasks": "Proponiendo tareas…",
-          "filling_fields": "Rellenando campos…"
+          "filling_fields": "Rellenando campos…",
+          "guessing_species": "Proponiendo especie…",
+          "generating_image": "Generando imagen…"
         }
       }
     },

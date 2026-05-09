@@ -73,6 +73,8 @@ class AIState(StrEnum):
     IDLE = "idle"
     PROPOSING_TASKS = "proposing_tasks"
     FILLING_FIELDS = "filling_fields"
+    GUESSING_SPECIES = "guessing_species"
+    GENERATING_IMAGE = "generating_image"
 
 
 # OpenPlantBook constants

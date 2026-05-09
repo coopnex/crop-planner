@@ -56,7 +56,9 @@
         "state": {
           "idle": "Idle",
           "proposing_tasks": "Proposing tasks…",
-          "filling_fields": "Filling fields…"
+          "filling_fields": "Filling fields…",
+          "guessing_species": "Guessing species…",
+          "generating_image": "Generating image…"
         }
       }
     },

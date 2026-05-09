@@ -56,7 +56,9 @@
         "state": {
           "idle": "En espera",
           "proposing_tasks": "Proposant tasques…",
-          "filling_fields": "Emplenant camps…"
+          "filling_fields": "Emplenant camps…",
+          "guessing_species": "Proposant espècie…",
+          "generating_image": "Generant imatge…"
         }
       }
     },

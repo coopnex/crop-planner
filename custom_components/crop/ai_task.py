@@ -392,6 +392,7 @@ class GuessSpeciesAITask(AITaskEntity):
         coordinator: CropPlannerCoordinator = hass.data[DOMAIN][COORDINATOR]
         self._hass = hass
         self._entry = entry
+        self._coordinator = coordinator
         self._attr_unique_id = f"{entry.entry_id}_guess_species"
         self._device_id = coordinator.device_id
         self.entity_id = async_generate_entity_id(
@@ -409,6 +410,15 @@ class GuessSpeciesAITask(AITaskEntity):
             msg = "No plant name provided. Pass it via the instructions field."
             raise HomeAssistantError(msg)
 
+        self._coordinator.set_ai_state(AIState.GUESSING_SPECIES)
+        try:
+            result = await self.inner_guess_species(plant_name, task)
+            LOGGER.debug("Species guess result for %r: %s", plant_name, result.data)
+            return result
+        finally:
+            self._coordinator.set_ai_state(AIState.IDLE)
+
+    async def inner_guess_species(self, plant_name:str, task: GenDataTask) -> GenDataTaskResult:
         delegate_entity_id = _find_delegate_entity_id(self._hass)
         if delegate_entity_id is None:
             msg = (
@@ -416,7 +426,6 @@ class GuessSpeciesAITask(AITaskEntity):
                 "Set up an AI assistant integration (e.g. Google AI, OpenAI) first."
             )
             raise HomeAssistantError(msg)
-
         latitude = self._hass.config.latitude
         longitude = self._hass.config.longitude
         context = (
@@ -432,7 +441,6 @@ class GuessSpeciesAITask(AITaskEntity):
             instructions=instructions,
             structure=_GUESS_SPECIES_SCHEMA,
         )
-        LOGGER.debug("Species guess result for %r: %s", plant_name, result.data)
         return result
 
     def update_registry(self) -> None:
@@ -491,11 +499,8 @@ class FillCropFieldsAITask(AITaskEntity):
         """Inner implementation of generate data."""
         crops: list[dict] = copy.deepcopy(list(self._entry.data.get(CONF_CROPS, [])))
 
-        # Track which crops need an image before we mutate anything.
-        needs_image: set[str] = {c["id"] for c in crops if not c.get("image_url")}
-
         incomplete = [c for c in crops if self._crop_is_incomplete(c)]
-        if not incomplete and not needs_image:
+        if not incomplete:
             LOGGER.debug("All crops are already complete; nothing to fill.")
             return GenDataTaskResult(
                 conversation_id=None,
@@ -544,12 +549,7 @@ class FillCropFieldsAITask(AITaskEntity):
             else:
                 LOGGER.debug("No suggestions returned by LLM.")
 
-        # Fetch images before saving so the entity isn't reloaded mid-flight.
-        # try/finally ensures the save always happens even if image generation fails.
-        try:
-            await self._fetch_missing_images(crops, needs_image)
-        finally:
-            self._save_crops(crops)
+        self._save_crops(crops)
 
         if summary:
             async_create(
@@ -560,39 +560,6 @@ class FillCropFieldsAITask(AITaskEntity):
             )
 
         return result
-
-    async def _fetch_missing_images(
-        self, crops: list[dict[str, Any]], crop_ids: set[str]
-    ) -> None:
-        """Generate AI images for crops in *crop_ids* that still lack one."""
-        if not crop_ids:
-            return
-        image_entity_id = er.async_get(self._hass).async_get_entity_id(
-            Platform.AI_TASK, DOMAIN, f"{self._entry.entry_id}_generate_plant_image"
-        )
-        if image_entity_id is None:
-            LOGGER.debug(
-                "GeneratePlantImageAITask entity not found; skipping image fetch"
-            )
-            return
-
-        for crop in crops:
-            # if crop["id"] not in crop_ids or crop.get("image_url"):
-            #     continue
-            query = crop.get("name") or crop.get("species", "")
-            try:
-                img_result = await async_generate_data(
-                    self._hass,
-                    task_name="generate_plant_image",
-                    entity_id=image_entity_id,
-                    instructions=query,
-                )
-                image_url: str | None = (img_result.data or {}).get("image_url")
-                LOGGER.debug("Generated image for %r: %s", query, image_url)
-                if image_url:
-                    crop["image_url"] = image_url
-            except Exception as exc:  # noqa: BLE001
-                LOGGER.warning("AI image generation failed for %r: %s", query, exc)
 
     @staticmethod
     def _crop_is_incomplete(crop: dict[str, Any]) -> bool:
@@ -715,6 +682,7 @@ class GeneratePlantImageAITask(AITaskEntity):
         coordinator: CropPlannerCoordinator = hass.data[DOMAIN][COORDINATOR]
         self._hass = hass
         self._entry = entry
+        self._coordinator = coordinator
         self._attr_unique_id = f"{entry.entry_id}_generate_plant_image"
         self._device_id = coordinator.device_id
         self.entity_id = async_generate_entity_id(
@@ -731,8 +699,23 @@ class GeneratePlantImageAITask(AITaskEntity):
         if not plant_name:
             msg = "No plant name provided. Pass it via the instructions field."
             raise HomeAssistantError(msg)
+        self._coordinator.set_ai_state(AIState.GENERATING_IMAGE)
+        try:
+            # Step 1: build a focused image-generation prompt via the text LLM.
+            image_prompt = await self.inner_generate_image_prompt(plant_name, task)
 
-        # Step 1: build a focused image-generation prompt via the text LLM.
+            # Step 2: delegate to a GENERATE_IMAGE entity.
+            image_url = await self.inner_generate_image(image_prompt, task)
+
+            return GenDataTaskResult(
+                conversation_id=None,
+                data={"plant_name": plant_name, "image_url": image_url},
+            )
+        finally:
+            self._coordinator.set_ai_state(AIState.IDLE)
+
+
+    async def inner_generate_image_prompt(self, plant_name: str, task: GenDataTask) -> str:
         text_delegate = _find_delegate_entity_id(self._hass)
         if text_delegate is None:
             msg = "No text AI task entity available to build the image prompt."
@@ -753,8 +736,9 @@ class GeneratePlantImageAITask(AITaskEntity):
                 "filling the frame, neutral background, sharp detail."
             )
         LOGGER.debug("Image generation prompt for %r: %s", plant_name, image_prompt)
+        return image_prompt
 
-        # Step 2: delegate to a GENERATE_IMAGE entity.
+    async def inner_generate_image(self, image_prompt: str, task: GenDataTask) -> str | None:
         image_delegate = _find_image_delegate_entity_id(self._hass)
         if image_delegate is None:
             msg = (
@@ -773,7 +757,6 @@ class GeneratePlantImageAITask(AITaskEntity):
         if not image_result:
             msg = "Image generation returned no data."
             raise HomeAssistantError(msg)
-
         # async_generate_image returns a ServiceResponse dict with a signed 'url'
         # that expires after ~1 hour. Copy the file to www/crop_planner/ so the
         # /local/ URL is permanent.
@@ -785,11 +768,8 @@ class GeneratePlantImageAITask(AITaskEntity):
         image_url = await self._hass.async_add_executor_job(
             self._persist_image, signed_url
         )
-        LOGGER.debug("Generated image for %r: %s", plant_name, image_url)
-        return GenDataTaskResult(
-            conversation_id=None,
-            data={"plant_name": plant_name, "image_url": image_url},
-        )
+        LOGGER.debug("Generated image for %r: %s", image_prompt, image_url)
+        return image_url
 
     def _persist_image(self, signed_url: str) -> str:
         """
