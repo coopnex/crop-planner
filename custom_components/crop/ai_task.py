@@ -412,13 +412,16 @@ class GuessSpeciesAITask(AITaskEntity):
 
         self._coordinator.set_ai_state(AIState.GUESSING_SPECIES)
         try:
-            result = await self.inner_guess_species(plant_name, task)
+            result = await self._inner_guess_species(plant_name, task)
             LOGGER.debug("Species guess result for %r: %s", plant_name, result.data)
             return result
         finally:
             self._coordinator.set_ai_state(AIState.IDLE)
 
-    async def inner_guess_species(self, plant_name:str, task: GenDataTask) -> GenDataTaskResult:
+    async def _inner_guess_species(
+        self, plant_name: str, task: GenDataTask
+    ) -> GenDataTaskResult:
+        """Delegate species guessing to the LLM and return the result."""
         delegate_entity_id = _find_delegate_entity_id(self._hass)
         if delegate_entity_id is None:
             msg = (
@@ -434,14 +437,13 @@ class GuessSpeciesAITask(AITaskEntity):
         )
         instructions = f"{_GUESS_SPECIES_INSTRUCTIONS}\n\n{context}"
         LOGGER.debug("Guessing species for %r via %s", plant_name, delegate_entity_id)
-        result = await async_generate_data(
+        return await async_generate_data(
             self._hass,
             task_name=task.name,
             entity_id=delegate_entity_id,
             instructions=instructions,
             structure=_GUESS_SPECIES_SCHEMA,
         )
-        return result
 
     def update_registry(self) -> None:
         """Associate the entity with the integration device."""
@@ -702,10 +704,10 @@ class GeneratePlantImageAITask(AITaskEntity):
         self._coordinator.set_ai_state(AIState.GENERATING_IMAGE)
         try:
             # Step 1: build a focused image-generation prompt via the text LLM.
-            image_prompt = await self.inner_generate_image_prompt(plant_name, task)
+            image_prompt = await self._inner_generate_image_prompt(plant_name, task)
 
             # Step 2: delegate to a GENERATE_IMAGE entity.
-            image_url = await self.inner_generate_image(image_prompt, task)
+            image_url = await self._inner_generate_image(image_prompt, task)
 
             return GenDataTaskResult(
                 conversation_id=None,
@@ -714,8 +716,10 @@ class GeneratePlantImageAITask(AITaskEntity):
         finally:
             self._coordinator.set_ai_state(AIState.IDLE)
 
-
-    async def inner_generate_image_prompt(self, plant_name: str, task: GenDataTask) -> str:
+    async def _inner_generate_image_prompt(
+        self, plant_name: str, task: GenDataTask
+    ) -> str:
+        """Ask the text LLM to craft a focused botanical image-generation prompt."""
         text_delegate = _find_delegate_entity_id(self._hass)
         if text_delegate is None:
             msg = "No text AI task entity available to build the image prompt."
@@ -738,7 +742,10 @@ class GeneratePlantImageAITask(AITaskEntity):
         LOGGER.debug("Image generation prompt for %r: %s", plant_name, image_prompt)
         return image_prompt
 
-    async def inner_generate_image(self, image_prompt: str, task: GenDataTask) -> str | None:
+    async def _inner_generate_image(
+        self, image_prompt: str, task: GenDataTask
+    ) -> str | None:
+        """Delegate image generation and persist the result, returning a /local/ URL."""
         image_delegate = _find_image_delegate_entity_id(self._hass)
         if image_delegate is None:
             msg = (
@@ -779,7 +786,9 @@ class GeneratePlantImageAITask(AITaskEntity):
         """
         url_path = urlparse(signed_url).path  # /ai_task/image/<filename>.png
         filename = pathlib.Path(url_path).name
-        src = pathlib.Path(self._hass.config.config_dir) / "media" / url_path.lstrip("/")
+        src = (
+            pathlib.Path(self._hass.config.config_dir) / "media" / url_path.lstrip("/")
+        )
         dst_dir = pathlib.Path(self._hass.config.config_dir) / "www" / "crop_planner"
         dst_dir.mkdir(parents=True, exist_ok=True)
         shutil.copy2(src, dst_dir / filename)

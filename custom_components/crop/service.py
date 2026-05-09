@@ -8,7 +8,7 @@ from typing import TYPE_CHECKING
 
 import voluptuous as vol
 from homeassistant.components.ai_task import async_generate_data
-from homeassistant.config_entries import ConfigEntryState, ConfigEntry
+from homeassistant.config_entries import ConfigEntry, ConfigEntryState
 from homeassistant.const import SERVICE_RELOAD, Platform
 from homeassistant.core import HomeAssistant, ServiceCall, callback
 from homeassistant.helpers import config_validation as cv
@@ -112,10 +112,11 @@ async def _enrich_crop(
         _patch_crop(hass, coordinator, crop_id, fields)
 
 
-async def invoke_enrich_crops_task(crop_id: str, entry: ConfigEntry[CropPlannerData], hass: HomeAssistant):
-    entity_id = _resolve_ai_task_entity_id(
-        hass, f"{entry.entry_id}_enrich_crop_data"
-    )
+async def invoke_enrich_crops_task(
+    crop_id: str, entry: ConfigEntry[CropPlannerData], hass: HomeAssistant
+) -> None:
+    """Invoke the enrich_crop_data AI task for the given crop."""
+    entity_id = _resolve_ai_task_entity_id(hass, f"{entry.entry_id}_enrich_crop_data")
     if entity_id:
         try:
             result = await async_generate_data(
@@ -126,16 +127,16 @@ async def invoke_enrich_crops_task(crop_id: str, entry: ConfigEntry[CropPlannerD
             )
             LOGGER.debug("Enriched crop data for %s with result %r", crop_id, result)
         except Exception as exc:  # noqa: BLE001
-            LOGGER.warning(
-                "FillCropFieldsAITask failed for %s: %s", crop_id, exc
-            )
+            LOGGER.warning("FillCropFieldsAITask failed for %s: %s", crop_id, exc)
     else:
-        LOGGER.debug(
-            "FillCropFieldsAITask entity not found; skipping image generation"
-        )
-        return None
+        LOGGER.debug("FillCropFieldsAITask entity not found; skipping image generation")
+        return
 
-async def invoke_image_generation_task(crop_name: str, entry: ConfigEntry[CropPlannerData], hass: HomeAssistant):
+
+async def invoke_image_generation_task(
+    crop_name: str, entry: ConfigEntry[CropPlannerData], hass: HomeAssistant
+) -> str | None:
+    """Generate an AI plant image for the given crop name and return the URL."""
     image_query = crop_name
     entity_id = _resolve_ai_task_entity_id(
         hass, f"{entry.entry_id}_generate_plant_image"
@@ -163,7 +164,10 @@ async def invoke_image_generation_task(crop_name: str, entry: ConfigEntry[CropPl
         return None
 
 
-async def invoke_guess_species_task(crop_name: str, entry: ConfigEntry[CropPlannerData], hass: HomeAssistant):
+async def invoke_guess_species_task(
+    crop_name: str, entry: ConfigEntry[CropPlannerData], hass: HomeAssistant
+) -> str | None:
+    """Guess the botanical species for the given crop name and return it."""
     entity_id = _resolve_ai_task_entity_id(hass, f"{entry.entry_id}_guess_species")
     if entity_id:
         try:
@@ -217,7 +221,7 @@ def register_component_services(component: EntityComponent) -> None:
         """Create a new crop entry and enrich it with AI-derived species and image."""
         hass = call.hass
         coordinator: CropPlannerCoordinator = hass.data[DOMAIN][COORDINATOR]
-        name_:str = call.data[ATTR_NAME]
+        name_: str = call.data[ATTR_NAME]
         crop_data = CropData(
             id=call.context.id,
             name=name_.capitalize(),
