@@ -20,6 +20,7 @@
         "async-timeout==4.0.3",
         "openplantbook-sdk==0.6.1"
     ],
+    "homeassistant": "2026.2.3",
     "single_config_entry": true,
     "version": "0.6.0"
 }
