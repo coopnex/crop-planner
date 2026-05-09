@@ -7,7 +7,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 This is a **Home Assistant custom integration** for crop planning. It allows users to manage crop entries (planting dates, quantities, species) with optional integration to the [OpenPlantbook](https://open.plantbook.io/) API for species data and imagery. The integration exposes crop entries as Home Assistant entities and calendar events.
 
 - **Domain:** `crop`
-- **Minimum HA version:** 2025.10.2
+- **Minimum HA version:** 2026.2.3
 - **Python:** 3.13+
 - **Single config entry** (only one instance allowed)
 
