@@ -7,10 +7,10 @@ from datetime import UTC, date, datetime
 from typing import TYPE_CHECKING
 
 import voluptuous as vol
+from homeassistant.components.ai_task import async_generate_data
 from homeassistant.config_entries import ConfigEntry, ConfigEntryState
 from homeassistant.const import SERVICE_RELOAD, Platform
 from homeassistant.core import HomeAssistant, ServiceCall, callback
-from homeassistant.components.ai_task import async_generate_data
 from homeassistant.helpers import config_validation as cv
 from homeassistant.helpers import entity_registry as er
 from homeassistant.helpers.service import async_register_admin_service
