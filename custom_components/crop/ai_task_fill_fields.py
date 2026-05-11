@@ -85,6 +85,7 @@ class FillCropFieldsAITask(AITaskEntity):
        overwriting values the user has already set.
     """
 
+    _attr_should_poll = False
     _attr_supported_features = AITaskEntityFeature.GENERATE_DATA
     _attr_has_entity_name = True
     _attr_translation_key = "enrich_crop_data"

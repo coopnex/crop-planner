@@ -80,6 +80,7 @@ class GenerateChoresAITask(AITaskEntity):
     3. Appends the returned suggestions to the crop chores todo list.
     """
 
+    _attr_should_poll = False
     _attr_supported_features = AITaskEntityFeature.GENERATE_DATA
     _attr_has_entity_name = True
     _attr_translation_key = "generate_chores"

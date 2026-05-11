@@ -52,6 +52,7 @@ _GUESS_SPECIES_SCHEMA = vol.Schema(
 class GuessSpeciesAITask(AITaskEntity):
     """AI task entity that guesses the botanical species for a given plant name."""
 
+    _attr_should_poll = False
     _attr_supported_features = AITaskEntityFeature.GENERATE_DATA
     _attr_has_entity_name = True
     _attr_translation_key = "guess_species"

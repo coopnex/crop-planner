@@ -118,16 +118,15 @@ async def invoke_enrich_crops_task(
     entity_id = _resolve_ai_task_entity_id(hass, f"{entry.entry_id}_enrich_crop_data")
     if entity_id:
         try:
-            result = await hass.services.async_call(
-                "ai_task",
-                "generate_data",
-                {
-                    "task_name": "enrich_crop_data",
-                    "entity_id": entity_id,
-                    "instructions": "",
-                },
-                blocking=True,
-                return_response=True,
+            from homeassistant.components.ai_task import (  # noqa: PLC0415
+                async_generate_data,
+            )
+
+            result = await async_generate_data(
+                hass,
+                task_name="enrich_crop_data",
+                entity_id=entity_id,
+                instructions="",
             )
             LOGGER.debug("Enriched crop data for %s with result %r", crop_id, result)
         except Exception as exc:  # noqa: BLE001
@@ -147,18 +146,17 @@ async def invoke_image_generation_task(
     )
     if entity_id:
         try:
-            result = await hass.services.async_call(
-                "ai_task",
-                "generate_data",
-                {
-                    "task_name": "generate_plant_image",
-                    "entity_id": entity_id,
-                    "instructions": image_query,
-                },
-                blocking=True,
-                return_response=True,
+            from homeassistant.components.ai_task import (  # noqa: PLC0415
+                async_generate_data,
             )
-            image_url: str | None = (result.get("data") or {}).get("image_url")
+
+            result = await async_generate_data(
+                hass,
+                task_name="generate_plant_image",
+                entity_id=entity_id,
+                instructions=image_query,
+            )
+            image_url: str | None = (result.data or {}).get("image_url")
             LOGGER.debug("Generated image for %r: %s", image_query, image_url)
             if image_url:
                 return image_url
@@ -180,18 +178,17 @@ async def invoke_guess_species_task(
     entity_id = _resolve_ai_task_entity_id(hass, f"{entry.entry_id}_guess_species")
     if entity_id:
         try:
-            result = await hass.services.async_call(
-                "ai_task",
-                "generate_data",
-                {
-                    "task_name": "guess_species",
-                    "entity_id": entity_id,
-                    "instructions": crop_name,
-                },
-                blocking=True,
-                return_response=True,
+            from homeassistant.components.ai_task import (  # noqa: PLC0415
+                async_generate_data,
             )
-            species = (result.get("data") or {}).get("species")
+
+            result = await async_generate_data(
+                hass,
+                task_name="guess_species",
+                entity_id=entity_id,
+                instructions=crop_name,
+            )
+            species = (result.data or {}).get("species")
             LOGGER.debug("Guessed species for %r: %s", crop_name, species)
             if species:
                 return species

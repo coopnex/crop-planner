@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "crop_planner"
-version = "0.6.2"
+version = "0.6.3-RC1"
 license = "Apache-2.0"
 license-files = ["LICENSE*"]
 description = "A crop planning tool for Home Assistant"
@@ -18,10 +18,10 @@ classifiers = [
   "Intended Audience :: End Users/Desktop",
   "Intended Audience :: Developers",
   "Operating System :: OS Independent",
-  "Programming Language :: Python :: 3.13",
+  "Programming Language :: Python :: 3.14",
   "Topic :: Home Automation",
 ]
-requires-python = ">=3.13.2"
+requires-python = ">=3.14.2"
 dependencies = []
 
 [tool.pytest.ini_options]

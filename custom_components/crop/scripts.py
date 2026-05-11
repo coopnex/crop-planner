@@ -33,13 +33,6 @@ _ADD_CROP_SCRIPT: dict = {
             "example": 3,
             "selector": {"number": {"min": 1, "max": 50, "step": 1, "mode": "box"}},
         },
-        "species": {
-            "name": "Species",
-            "description": "Species hint for OpenPlantbook lookup (optional)",
-            "required": False,
-            "example": "Solanum lycopersicum",
-            "selector": {"text": {}},
-        },
     },
     "sequence": [
         {
@@ -47,7 +40,6 @@ _ADD_CROP_SCRIPT: dict = {
             "data": {
                 "name": "{{ name }}",
                 "quantity": "{{ quantity | int }}",
-                "species": "{{ species | default('') }}",
             },
         }
     ],
@@ -72,10 +64,12 @@ async def async_ensure_scripts(hass: HomeAssistant) -> None:
 
     scripts = await hass.async_add_executor_job(_load)
 
-    if _ADD_CROP_SCRIPT_ID in scripts:
+    existing = scripts.get(_ADD_CROP_SCRIPT_ID)
+    if existing and existing.get("sequence") == _ADD_CROP_SCRIPT["sequence"]:
         return
 
-    LOGGER.info("Installing script '%s' into scripts.yaml", _ADD_CROP_SCRIPT_ID)
+    action = "Updating" if existing else "Installing"
+    LOGGER.info("%s script '%s' into scripts.yaml", action, _ADD_CROP_SCRIPT_ID)
     scripts[_ADD_CROP_SCRIPT_ID] = _ADD_CROP_SCRIPT
     await hass.async_add_executor_job(_save, scripts)
     await hass.services.async_call("script", "reload")

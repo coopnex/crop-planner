@@ -37,6 +37,7 @@ async def async_setup_entry(
 class CropPlannerCalendar(CalendarEntity):
     """Representation of a Sensor."""
 
+    _attr_should_poll = False
     _attr_has_entity_name = True
     _attr_translation_key = "crop_calendar"
 

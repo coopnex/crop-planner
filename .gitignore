@@ -23,4 +23,5 @@ config/*
 custom_components/hacs
 custom_components/browser_mod
 /.playwright-mcp/
-/.serena
+/.serena/
+/dist/
