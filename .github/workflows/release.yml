@@ -15,7 +15,7 @@ jobs:
       - name: Set up Python
         uses: actions/setup-python@v6 # v6.0.0
         with:
-          python-version: "3.13"
+          python-version: "3.14.2"
           cache: "pip"
       - name: Install requirements
         run: python3 -m pip install --upgrade -r requirements.txt -r requirements_test.txt
@@ -23,8 +23,8 @@ jobs:
         run: python3 -m ruff check .
       - name: Format
         run: python3 -m ruff format . --check
-#      - name: Run tests
-#        run: python3 -m pytest
+      - name: Run tests
+        run: python3 -m pytest
       - name: Determine pre-release flag
         id: prerelease
         run: |
