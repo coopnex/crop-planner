@@ -4,6 +4,30 @@ set -euo pipefail
 PYPROJECT="pyproject.toml"
 MANIFEST="custom_components/crop/manifest.json"
 
+# ── Usage ─────────────────────────────────────────────────────────────────────
+usage() {
+  echo "Usage: script/release.sh [--bump major|minor|patch|snapshot] [--pre RC1] [--yes]"
+  echo ""
+  echo "  --bump   Version bump type (major, minor, patch, snapshot)"
+  echo "  --pre    Pre-release suffix (e.g. RC1, beta-1); required on non-main branches"
+  echo "  --yes    Skip confirmation prompt"
+  exit 1
+}
+
+ARG_BUMP=""
+ARG_PRE=""
+ARG_YES=false
+
+while [[ $# -gt 0 ]]; do
+  case "$1" in
+    --bump) ARG_BUMP="$2"; shift 2 ;;
+    --pre)  ARG_PRE="$2";  shift 2 ;;
+    --yes)  ARG_YES=true;  shift   ;;
+    -h|--help) usage ;;
+    *) echo "Unknown flag: $1" >&2; usage ;;
+  esac
+done
+
 # ── 1. Uncommitted changes check ─────────────────────────────────────────────
 if ! git diff --quiet || ! git diff --cached --quiet; then
   echo "Error: You have uncommitted changes. Please commit or stash them first." >&2
@@ -36,11 +60,17 @@ IFS='.' read -r MAJOR MINOR PATCH <<< "$BASE_VERSION"
 
 echo ""
 echo "Current version: $CURRENT_VERSION"
-echo "Select version bump type:"
-select BUMP_TYPE in major minor patch snapshot; do
-  [[ -n "$BUMP_TYPE" ]] && break
-  echo "Invalid selection."
-done
+
+if [[ -n "$ARG_BUMP" ]]; then
+  BUMP_TYPE="$ARG_BUMP"
+  echo "Bump type: $BUMP_TYPE"
+else
+  echo "Select version bump type:"
+  select BUMP_TYPE in major minor patch snapshot; do
+    [[ -n "$BUMP_TYPE" ]] && break
+    echo "Invalid selection."
+  done
+fi
 
 # ── 6. Calculate new version ──────────────────────────────────────────────────
 case "$BUMP_TYPE" in
@@ -48,12 +78,16 @@ case "$BUMP_TYPE" in
   minor) MINOR=$((MINOR + 1)); PATCH=0 ;;
   patch) PATCH=$((PATCH + 1)) ;;
   snapshot) ;; # keep MAJOR.MINOR.PATCH as-is
+  *) echo "Invalid bump type: $BUMP_TYPE" >&2; usage ;;
 esac
 
 NEW_VERSION="$MAJOR.$MINOR.$PATCH"
 
 echo ""
-if $IS_MAIN; then
+if [[ -n "$ARG_PRE" ]]; then
+  PRE_SUFFIX="$ARG_PRE"
+  NEW_VERSION="$NEW_VERSION-$PRE_SUFFIX"
+elif $IS_MAIN; then
   read -rp "Enter pre-release suffix (e.g. RC1, beta-1) or leave empty for a stable release: " PRE_SUFFIX
   [[ -n "$PRE_SUFFIX" ]] && NEW_VERSION="$NEW_VERSION-$PRE_SUFFIX"
 else
@@ -67,10 +101,13 @@ fi
 
 echo ""
 echo "Version bump: $CURRENT_VERSION → $NEW_VERSION"
-read -rp "Proceed with this release? [y/N] " CONFIRM
-if [[ ! "$CONFIRM" =~ ^[Yy]$ ]]; then
-  echo "Aborted."
-  exit 0
+
+if ! $ARG_YES; then
+  read -rp "Proceed with this release? [y/N] " CONFIRM
+  if [[ ! "$CONFIRM" =~ ^[Yy]$ ]]; then
+    echo "Aborted."
+    exit 0
+  fi
 fi
 
 # Update version in pyproject.toml and manifest.json
