@@ -50,7 +50,7 @@ script/lint
 
 # ── 4. Tests ──────────────────────────────────────────────────────────────────
 echo "Running tests..."
-pytest
+script/run-in-env.sh pytest
 
 # ── 5. Version bump type ─────────────────────────────────────────────────────
 CURRENT_VERSION=$(sed -n 's/^version = "\(.*\)"/\1/p' "$PYPROJECT")
