@@ -19,7 +19,7 @@
     "requirements": [
         "openplantbook-sdk==0.6.1"
     ],
-    "homeassistant": "2026.2.3",
+    "homeassistant": "2026.5.1",
     "single_config_entry": true,
     "version": "0.6.3-RC1"
 }

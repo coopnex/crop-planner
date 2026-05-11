@@ -38,6 +38,7 @@ async def async_setup_entry(
 class CropTodoList(TodoListEntity):
     """A todo list for tracking crop chores."""
 
+    _attr_should_poll = False
     _attr_supported_features = (
         TodoListEntityFeature.CREATE_TODO_ITEM
         | TodoListEntityFeature.UPDATE_TODO_ITEM

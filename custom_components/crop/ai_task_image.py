@@ -55,6 +55,7 @@ class GeneratePlantImageAITask(AITaskEntity):
     4. Return the /local/ URL so it can be stored on the crop entity.
     """
 
+    _attr_should_poll = False
     _attr_supported_features = AITaskEntityFeature.GENERATE_DATA
     _attr_has_entity_name = True
     _attr_translation_key = "generate_plant_image"

@@ -4,7 +4,6 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
-from homeassistant.components.ai_task import async_generate_data
 from homeassistant.components.button import ButtonEntity
 from homeassistant.const import Platform
 from homeassistant.helpers import entity_registry as er
@@ -84,6 +83,8 @@ class GenerateChoresButton(CoordinatorEntity, ButtonEntity):
             )
             return
         LOGGER.debug("Triggering crop chore generation via %s", ai_entity_id)
+        from homeassistant.components.ai_task import async_generate_data  # noqa: PLC0415
+
         await async_generate_data(
             self._hass,
             task_name=_AI_TASK_NAME,
@@ -147,6 +148,8 @@ class FillCropFieldsButton(CoordinatorEntity, ButtonEntity):
             )
             return
         LOGGER.debug("Triggering crop field filling via %s", ai_entity_id)
+        from homeassistant.components.ai_task import async_generate_data  # noqa: PLC0415
+
         await async_generate_data(
             self._hass,
             task_name="enrich_crop_data",

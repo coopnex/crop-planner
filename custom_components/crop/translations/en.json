@@ -81,6 +81,22 @@
       }
     }
   },
+  "script": {
+    "add_crop": {
+      "name": "Add Crop",
+      "description": "Creates a new crop entry. Species and image are enriched automatically by AI.",
+      "fields": {
+        "name": {
+          "name": "Name",
+          "description": "Name of the crop"
+        },
+        "quantity": {
+          "name": "Quantity",
+          "description": "Number of plants to track"
+        }
+      }
+    }
+  },
   "options": {
     "step": {
       "init": {
