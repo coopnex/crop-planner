@@ -149,7 +149,7 @@ git push origin "$BRANCH"
 git push origin "$TAG"
 
 # ── 10. Create GitHub release ─────────────────────────────────────────────────
-GH_FLAGS="--title $TAG"
+GH_FLAGS="--title $TAG --generate-notes"
 [[ "$NEW_VERSION" == *-* ]] && GH_FLAGS="$GH_FLAGS --prerelease"
 # shellcheck disable=SC2086
 gh release create "$TAG" $GH_FLAGS
