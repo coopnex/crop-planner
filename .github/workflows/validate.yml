@@ -17,11 +17,15 @@ on:
       - '*.md'
       - '*.yaml'
       - 'LICENSE'
+  workflow_dispatch:
 
 jobs:
   hacs: # https://github.com/hacs/action
     name: "HACS Validation"
     runs-on: "ubuntu-latest"
+    concurrency:
+      group: ${{ github.workflow }}-hacs-${{ github.ref }}
+      cancel-in-progress: true
     steps:
       - name: "Checkout the repository"
         uses: "actions/checkout@v6"
@@ -35,6 +39,9 @@ jobs:
   ruff:
     name: "Lint"
     runs-on: "ubuntu-latest"
+    concurrency:
+      group: ${{ github.workflow }}-ruff-${{ github.ref }}
+      cancel-in-progress: true
     steps:
       - name: Checkout the repository
         uses: actions/checkout@v6 # v5.0.0
@@ -52,6 +59,9 @@ jobs:
   test:
     name: "Test"
     runs-on: "ubuntu-latest"
+    concurrency:
+      group: ${{ github.workflow }}-test-${{ github.ref }}
+      cancel-in-progress: true
     steps:
       - name: Checkout the repository
         uses: actions/checkout@v6 # v5.0.0
