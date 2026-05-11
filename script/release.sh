@@ -56,10 +56,13 @@ script/run-in-env.sh pytest
 CURRENT_VERSION=$(sed -n 's/^version = "\(.*\)"/\1/p' "$PYPROJECT")
 # Strip any pre-release suffix (e.g. 0.2.0-beta-1 → 0.2.0)
 BASE_VERSION="${CURRENT_VERSION%%-*}"
+IS_PRERELEASE=false
+[[ "$CURRENT_VERSION" == *-* ]] && IS_PRERELEASE=true
 IFS='.' read -r MAJOR MINOR PATCH <<< "$BASE_VERSION"
 
 echo ""
 echo "Current version: $CURRENT_VERSION"
+$IS_PRERELEASE && echo "(current version is a pre-release)"
 
 if [[ -n "$ARG_BUMP" ]]; then
   BUMP_TYPE="$ARG_BUMP"
@@ -73,10 +76,28 @@ else
 fi
 
 # ── 6. Calculate new version ──────────────────────────────────────────────────
+# When the current version is a pre-release (e.g. 0.6.3-RC1), the base number
+# (0.6.3) was already bumped for that pre-release cycle. Promoting it to stable
+# or adding another pre-release tag should reuse that same base — not bump again.
 case "$BUMP_TYPE" in
-  major) MAJOR=$((MAJOR + 1)); MINOR=0; PATCH=0 ;;
-  minor) MINOR=$((MINOR + 1)); PATCH=0 ;;
-  patch) PATCH=$((PATCH + 1)) ;;
+  major)
+    if $IS_PRERELEASE && [[ $MINOR -eq 0 && $PATCH -eq 0 ]]; then
+      : # base already reflects the major bump
+    else
+      MAJOR=$((MAJOR + 1)); MINOR=0; PATCH=0
+    fi ;;
+  minor)
+    if $IS_PRERELEASE && [[ $PATCH -eq 0 ]]; then
+      : # base already reflects the minor bump
+    else
+      MINOR=$((MINOR + 1)); PATCH=0
+    fi ;;
+  patch)
+    if $IS_PRERELEASE; then
+      : # base already reflects the patch bump
+    else
+      PATCH=$((PATCH + 1))
+    fi ;;
   snapshot) ;; # keep MAJOR.MINOR.PATCH as-is
   *) echo "Invalid bump type: $BUMP_TYPE" >&2; usage ;;
 esac
@@ -126,6 +147,12 @@ echo "Created tag: $TAG"
 # ── 9. Push commits + tags ────────────────────────────────────────────────────
 git push origin "$BRANCH"
 git push origin "$TAG"
+
+# ── 10. Create GitHub release ─────────────────────────────────────────────────
+GH_FLAGS="--title $TAG --notes-from-tag"
+[[ "$NEW_VERSION" == *-* ]] && GH_FLAGS="$GH_FLAGS --prerelease"
+# shellcheck disable=SC2086
+gh release create "$TAG" $GH_FLAGS
 
 echo ""
 echo "Released $TAG successfully."
