@@ -10,7 +10,7 @@ from datetime import UTC, datetime
 from typing import ClassVar
 
 from homeassistant.components.sensor import SensorDeviceClass
-from homeassistant.const import STATE_OK, EntityCategory
+from homeassistant.const import STATE_OK
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers import (
     entity_registry as er,
@@ -38,7 +38,6 @@ class Crop(Entity):
     _attr_should_poll = True
     _attr_has_entity_name = True
     _attr_device_class = SensorDeviceClass.ENUM
-    _attr_entity_category = EntityCategory.DIAGNOSTIC
     _attr_options: ClassVar[list[str]] = [
         STATE_OK,
         *CROP_PHASES,

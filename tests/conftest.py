@@ -10,6 +10,12 @@ from homeassistant.components.homeassistant.exposed_entities import (
 
 
 @pytest.fixture(autouse=True)
+def expected_lingering_timers():
+    """Crop entities use should_poll=True, which leaves platform timers running."""
+    return True
+
+
+@pytest.fixture(autouse=True)
 def auto_enable_custom_integrations(enable_custom_integrations):
     """Enable custom integrations for all tests."""
 
