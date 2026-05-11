@@ -72,10 +72,12 @@ async def async_ensure_scripts(hass: HomeAssistant) -> None:
 
     scripts = await hass.async_add_executor_job(_load)
 
-    if _ADD_CROP_SCRIPT_ID in scripts:
+    existing = scripts.get(_ADD_CROP_SCRIPT_ID)
+    if existing and existing.get("sequence") == _ADD_CROP_SCRIPT["sequence"]:
         return
 
-    LOGGER.info("Installing script '%s' into scripts.yaml", _ADD_CROP_SCRIPT_ID)
+    action = "Updating" if existing else "Installing"
+    LOGGER.info("%s script '%s' into scripts.yaml", action, _ADD_CROP_SCRIPT_ID)
     scripts[_ADD_CROP_SCRIPT_ID] = _ADD_CROP_SCRIPT
     await hass.async_add_executor_job(_save, scripts)
     await hass.services.async_call("script", "reload")

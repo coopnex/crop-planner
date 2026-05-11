@@ -8,7 +8,7 @@ This is a **Home Assistant custom integration** for crop planning. It allows use
 
 - **Domain:** `crop`
 - **Minimum HA version:** 2026.2.3
-- **Python:** 3.13+
+- **Python:** 3.14+
 - **Single config entry** (only one instance allowed)
 
 ## Development Commands
