@@ -7,7 +7,6 @@ from datetime import UTC, date, datetime
 from typing import TYPE_CHECKING
 
 import voluptuous as vol
-from homeassistant.components.ai_task import async_generate_data
 from homeassistant.config_entries import ConfigEntry, ConfigEntryState
 from homeassistant.const import SERVICE_RELOAD, Platform
 from homeassistant.core import HomeAssistant, ServiceCall, callback
@@ -119,6 +118,10 @@ async def invoke_enrich_crops_task(
     entity_id = _resolve_ai_task_entity_id(hass, f"{entry.entry_id}_enrich_crop_data")
     if entity_id:
         try:
+            from homeassistant.components.ai_task import (  # noqa: PLC0415
+                async_generate_data,
+            )
+
             result = await async_generate_data(
                 hass,
                 task_name="enrich_crop_data",
@@ -143,6 +146,10 @@ async def invoke_image_generation_task(
     )
     if entity_id:
         try:
+            from homeassistant.components.ai_task import (  # noqa: PLC0415
+                async_generate_data,
+            )
+
             result = await async_generate_data(
                 hass,
                 task_name="generate_plant_image",
@@ -171,6 +178,10 @@ async def invoke_guess_species_task(
     entity_id = _resolve_ai_task_entity_id(hass, f"{entry.entry_id}_guess_species")
     if entity_id:
         try:
+            from homeassistant.components.ai_task import (  # noqa: PLC0415
+                async_generate_data,
+            )
+
             result = await async_generate_data(
                 hass,
                 task_name="guess_species",
