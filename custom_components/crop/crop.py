@@ -7,7 +7,7 @@ quantities, and device/entity registration behavior.
 """
 
 from datetime import UTC, datetime
-from typing import TYPE_CHECKING, ClassVar
+from typing import ClassVar
 
 from homeassistant.components.sensor import SensorDeviceClass
 from homeassistant.const import STATE_OK, EntityCategory
@@ -15,7 +15,6 @@ from homeassistant.core import HomeAssistant
 from homeassistant.helpers import (
     entity_registry as er,
 )
-from homeassistant.helpers.device_registry import DeviceInfo
 from homeassistant.helpers.entity import (
     Entity,
     async_generate_entity_id,
@@ -26,16 +25,11 @@ from custom_components.crop.data import (
 )
 
 from .const import (
-    COORDINATOR,
     CROP_PHASES,
     CROP_PLATFORM,
-    DOMAIN,
     ICON,
     ChoreCategory,
 )
-
-if TYPE_CHECKING:
-    from .coordinator import CropPlannerCoordinator
 
 
 class Crop(Entity):
@@ -54,7 +48,6 @@ class Crop(Entity):
 
     def __init__(self, hass: HomeAssistant, config: CropData) -> None:
         """Initialize a crop with a name, planting date, and harvest date."""
-        coordinator: CropPlannerCoordinator = hass.data[DOMAIN][COORDINATOR]
         self._hass = hass
         self._attr_name = config.name
         self._quantity = config.quantity
@@ -82,7 +75,6 @@ class Crop(Entity):
     def quantity(self) -> int:
         """Return the quantity of the crop."""
         return self._quantity
-
 
     @property
     def extra_state_attributes(self) -> dict:

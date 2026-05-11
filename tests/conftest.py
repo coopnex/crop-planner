@@ -4,6 +4,9 @@ from collections.abc import Generator
 from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
+from homeassistant.components.homeassistant.exposed_entities import (
+    DATA_EXPOSED_ENTITIES,
+)
 
 
 @pytest.fixture(autouse=True)
@@ -13,11 +16,7 @@ def auto_enable_custom_integrations(enable_custom_integrations):
 
 @pytest.fixture(autouse=True)
 def mock_exposed_entities(hass):
-    """Provide homeassistant.exposed_entities so ai_task's conversation dep doesn't fail."""
-    from homeassistant.components.homeassistant.exposed_entities import (
-        DATA_EXPOSED_ENTITIES,
-    )
-
+    """Stub exposed_entities so ai_task's conversation dep doesn't fail."""
     hass.data.setdefault(DATA_EXPOSED_ENTITIES, MagicMock())
 
 

@@ -32,7 +32,7 @@ _ADD_CROP_SCRIPT: dict = {
             "default": 1,
             "example": 3,
             "selector": {"number": {"min": 1, "max": 50, "step": 1, "mode": "box"}},
-        }
+        },
     },
     "sequence": [
         {

@@ -5,16 +5,13 @@ from __future__ import annotations
 from dataclasses import dataclass
 from typing import TYPE_CHECKING, Any
 
-from homeassistant.config_entries import ConfigEntry
 from homeassistant.helpers import (
     device_registry as dr,
 )
 from homeassistant.helpers.entity import async_generate_entity_id
 from homeassistant.helpers.update_coordinator import DataUpdateCoordinator
-from homeassistant.loader import Integration
 
-from .const import CONF_CLIENT_ID, CONF_CLIENT_SECRET, DOMAIN, AIState
-from .openplantbook import OpenPlantbookHelper
+from .const import DOMAIN, AIState
 
 if TYPE_CHECKING:
     from logging import Logger
