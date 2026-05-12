@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "crop_planner"
-version = "0.7.1"
+version = "0.7.2"
 license = "Apache-2.0"
 license-files = ["LICENSE*"]
 description = "A crop planning tool for Home Assistant"
@@ -30,7 +30,7 @@ pythonpath = ["."]
 testpaths = ["tests"]
 
 [tool.setuptools.packages.find]
-where = ["custom_components"]  # list of folders that contain the packages (["."] by default)
+where = ["custom_components"]  # list of folders that contain the packages (["."]) by default)
 include = ["*"]  # package names should match these glob patterns (["*"] by default)
 exclude = []  # exclude packages matching these glob patterns (empty by default)
 namespaces = false  # to disable scanning PEP 420 namespaces (true by default)
