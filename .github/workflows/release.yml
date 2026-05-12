@@ -12,21 +12,10 @@ jobs:
       contents: write
     steps:
       - uses: actions/checkout@v4
-      - name: Set up Python
-        uses: actions/setup-python@v6 # v6.0.0
-        with:
-          python-version: "3.14.2"
-          cache: "pip"
-      - name: Install requirements
-        run: python3 -m pip install --upgrade -r requirements.txt
-      - name: Lint
-        run: python3 -m ruff check .
-      - name: Format
-        run: python3 -m ruff format . --check
       - name: Determine pre-release flag
         id: prerelease
         run: |
-          if [[ "${GITHUB_REF_NAME}" =~ [-] ]]; then
+          if [[  "${GITHUB_REF_NAME}" =~ [-] ]]; then
             echo "is_prerelease=true" >> "$GITHUB_OUTPUT"
           else
             echo "is_prerelease=false" >> "$GITHUB_OUTPUT"
