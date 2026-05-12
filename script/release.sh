@@ -152,7 +152,7 @@ git push origin "$TAG"
 GH_FLAGS="--title $TAG --generate-notes"
 [[ "$NEW_VERSION" == *-* ]] && GH_FLAGS="$GH_FLAGS --prerelease"
 # shellcheck disable=SC2086
-gh release create "$TAG" $GH_FLAGS
+#gh release create "$TAG" $GH_FLAGS
 
 echo ""
 echo "Released $TAG successfully."
