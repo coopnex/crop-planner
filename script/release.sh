@@ -152,7 +152,11 @@ git push origin "$TAG"
 GH_FLAGS="--title $TAG --generate-notes"
 [[ "$NEW_VERSION" == *-* ]] && GH_FLAGS="$GH_FLAGS --prerelease"
 # shellcheck disable=SC2086
-#gh release create "$TAG" $GH_FLAGS
+if gh release view "$TAG" &>/dev/null; then
+  echo "GitHub release $TAG already exists (likely created by CI)."
+else
+  gh release create "$TAG" $GH_FLAGS
+fi
 
 echo ""
 echo "Released $TAG successfully."
