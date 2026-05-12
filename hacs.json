@@ -1,6 +1,6 @@
 {
     "name": "Crop Planner",
-    "homeassistant": "2025.10.2",
+    "homeassistant": "2026.5.1",
     "hacs": "2.0.5",
     "render_readme": true,
     "hide_default_branch": true
