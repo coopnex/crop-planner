@@ -108,9 +108,7 @@ async def _enrich_crop(
     if image_url:
         _patch_crop(hass, coordinator, crop_id, {"image_url": image_url})
         if not await _wait_for_reload(coordinator):
-            LOGGER.warning(
-                "Config entry did not reload after image patch; continuing"
-            )
+            LOGGER.warning("Config entry did not reload after image patch; continuing")
 
     # Step 3: fill remaining fields (phases etc.) — at this point image_url is
     # already in entry.data, so _save_crops will preserve it.
