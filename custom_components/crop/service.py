@@ -91,24 +91,30 @@ async def _enrich_crop(
 
     entry = coordinator.config_entry
 
-    fields: dict = {}
-
-    # Step 1: guess species if not already provided.
+    # Step 1: guess species if not already provided, persist immediately so that
+    # subsequent AI tasks (FillCropFields) read the already-saved value.
     if not species:
         species = await invoke_guess_species_task(crop_name, entry, hass)
         if species:
-            fields["species"] = species
+            _patch_crop(hass, coordinator, crop_id, {"species": species})
+            if not await _wait_for_reload(coordinator):
+                LOGGER.warning(
+                    "Config entry did not reload after species patch; continuing"
+                )
 
-    # Step 2: generate an AI image using the resolved species name (or crop name).
+    # Step 2: generate an AI image and persist it before FillCropFields runs,
+    # so _save_crops never overwrites the entry without image_url.
     image_url = await invoke_image_generation_task(crop_name, entry, hass)
     if image_url:
-        fields["image_url"] = image_url
+        _patch_crop(hass, coordinator, crop_id, {"image_url": image_url})
+        if not await _wait_for_reload(coordinator):
+            LOGGER.warning(
+                "Config entry did not reload after image patch; continuing"
+            )
 
-    await invoke_enrich_crops_task(crop_id, entry, hass)
-
-    # Single patch at the end to avoid triggering multiple reloads.
-    if fields:
-        _patch_crop(hass, coordinator, crop_id, fields)
+    # Step 3: fill remaining fields (phases etc.) — at this point image_url is
+    # already in entry.data, so _save_crops will preserve it.
+    await invoke_enrich_crops_task(crop_id, coordinator.config_entry, hass)
 
 
 async def invoke_enrich_crops_task(
