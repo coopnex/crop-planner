@@ -160,11 +160,13 @@ class GeneratePlantImageAITask(AITaskEntity):
 
         Runs in an executor thread because it performs blocking file I/O.
         """
-        url_path = urlparse(signed_url).path  # /ai_task/image/<filename>.png
-        filename = pathlib.Path(url_path).name
-        src = (
-            pathlib.Path(self._hass.config.config_dir) / "media" / url_path.lstrip("/")
-        )
+        # async_sign_path returns /media/local/ai_task/image/<filename>.png?authSig=...
+        # The file lives at config_dir/media/local/ai_task/image/<filename>.png,
+        # so strip the leading /media/ before joining with config_dir/media/.
+        url_path = urlparse(signed_url).path
+        rel_path = url_path.removeprefix("/media/")
+        filename = pathlib.Path(rel_path).name
+        src = pathlib.Path(self._hass.config.config_dir) / "media" / rel_path
         dst_dir = pathlib.Path(self._hass.config.config_dir) / "www" / "crop_planner"
         dst_dir.mkdir(parents=True, exist_ok=True)
         shutil.copy2(src, dst_dir / filename)
