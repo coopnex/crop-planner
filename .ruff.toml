@@ -13,6 +13,7 @@ ignore = [
     "D212", # multi-line-summary-first-line (incompatible with formatter)
     "COM812", # incompatible with formatter
     "ISC001", # incompatible with formatter
+    "RUF200", # allow non-PEP-440 version suffixes (e.g. -SNAPSHOT) in pyproject.toml
 ]
 
 [lint.flake8-pytest-style]
@@ -25,9 +26,6 @@ keep-runtime-typing = true
 max-complexity = 25
 
 [lint.per-file-ignores]
-"pyproject.toml" = [
-    "RUF200", # allow non-PEP-440 version suffixes (e.g. -SNAPSHOT)
-]
 "tests/**" = [
     "S101",    # assert is normal in tests
     "ANN",     # type annotations not required in tests
