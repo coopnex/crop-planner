@@ -93,11 +93,7 @@ case "$BUMP_TYPE" in
       MINOR=$((MINOR + 1)); PATCH=0
     fi ;;
   patch)
-    if $IS_PRERELEASE; then
-      : # base already reflects the patch bump
-    else
-      PATCH=$((PATCH + 1))
-    fi ;;
+    PATCH=$((PATCH + 1)) ;;
   snapshot) ;; # keep MAJOR.MINOR.PATCH as-is
   *) echo "Invalid bump type: $BUMP_TYPE" >&2; usage ;;
 esac
