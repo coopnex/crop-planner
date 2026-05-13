@@ -9,7 +9,6 @@ from typing import TYPE_CHECKING
 from urllib.parse import urlparse
 
 import aiohttp
-
 import voluptuous as vol
 from homeassistant.config_entries import ConfigEntry, ConfigEntryState
 from homeassistant.const import SERVER_PORT, SERVICE_RELOAD, Platform
@@ -199,10 +198,9 @@ async def _persist_image(hass: HomeAssistant, relative_url: str) -> str:
     url = f"http://localhost:{SERVER_PORT}{relative_url}"
     filename = pathlib.Path(urlparse(relative_url).path).name
     dst_dir = pathlib.Path(hass.config.config_dir) / "www" / "crop_planner"
-    async with aiohttp.ClientSession() as session:
-        async with session.get(url) as resp:
-            resp.raise_for_status()
-            content = await resp.read()
+    async with aiohttp.ClientSession() as session, session.get(url) as resp:
+        resp.raise_for_status()
+        content = await resp.read()
     await hass.async_add_executor_job(_write_image, dst_dir, filename, content)
     return filename
 
