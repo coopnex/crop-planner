@@ -195,7 +195,7 @@ def _persist_image(hass: HomeAssistant, signed_url: str) -> str:
     """
     url_path = urlparse(signed_url).path
     rel_path = url_path.lstrip("/")
-    src = pathlib.Path(hass.config.media_dirs["local"]) / rel_path
+    src = pathlib.Path(hass.config.media_dirs.get("local", "/media")) / rel_path
     dst_dir = pathlib.Path(hass.config.config_dir) / "www" / "crop_planner"
     dst_dir.mkdir(parents=True, exist_ok=True)
     filename = pathlib.Path(rel_path).name
