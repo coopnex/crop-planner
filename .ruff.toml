@@ -25,6 +25,9 @@ keep-runtime-typing = true
 max-complexity = 25
 
 [lint.per-file-ignores]
+"pyproject.toml" = [
+    "RUF200", # allow non-PEP-440 version suffixes (e.g. -SNAPSHOT)
+]
 "tests/**" = [
     "S101",    # assert is normal in tests
     "ANN",     # type annotations not required in tests
