@@ -112,8 +112,9 @@
       },
       "remove_crops": {
         "title": "Elimina cultius",
-        "description": "Selecciona un o més cultius per eliminar.",
+        "description": "Selecciona un o més cultius per eliminar, o marca la casella per eliminar-los tots.",
         "data": {
+          "remove_all": "Elimina tots els cultius",
           "crop_ids": "Cultius"
         }
       },

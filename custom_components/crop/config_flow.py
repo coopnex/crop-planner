@@ -121,8 +121,11 @@ class CropPlannerOptionsFlowHandler(config_entries.OptionsFlow):
         existing_crops: list[dict] = list(self.config_entry.data.get(CONF_CROPS, []))
 
         if user_input is not None:
-            ids_to_remove = set(user_input.get("crop_ids", []))
-            updated_crops = [c for c in existing_crops if c["id"] not in ids_to_remove]
+            if user_input.get("remove_all"):
+                updated_crops = []
+            else:
+                ids_to_remove = set(user_input.get("crop_ids", []))
+                updated_crops = [c for c in existing_crops if c["id"] not in ids_to_remove]
             self.hass.config_entries.async_update_entry(
                 self.config_entry,
                 data={**self.config_entry.data, CONF_CROPS: updated_crops},
@@ -138,7 +141,8 @@ class CropPlannerOptionsFlowHandler(config_entries.OptionsFlow):
             step_id="remove_crops",
             data_schema=vol.Schema(
                 {
-                    vol.Required("crop_ids"): selector.SelectSelector(
+                    vol.Optional("remove_all", default=False): selector.BooleanSelector(),
+                    vol.Optional("crop_ids", default=[]): selector.SelectSelector(
                         selector.SelectSelectorConfig(options=options, multiple=True)
                     ),
                 }
