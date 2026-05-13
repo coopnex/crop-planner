@@ -2,10 +2,7 @@
 
 from __future__ import annotations
 
-import pathlib
-import shutil
 from typing import TYPE_CHECKING
-from urllib.parse import urlparse
 
 import voluptuous as vol
 from homeassistant.components.ai_task import (
@@ -148,29 +145,8 @@ class GeneratePlantImageAITask(AITaskEntity):
             msg = "Image generation returned no URL."
             raise HomeAssistantError(msg)
 
-        image_url = await self._hass.async_add_executor_job(
-            self._persist_image, signed_url
-        )
-        LOGGER.debug("Generated image for %r: %s", image_prompt, image_url)
-        return image_url
-
-    def _persist_image(self, signed_url: str) -> str:
-        """
-        Copy the generated image to www/crop_planner/ and return the /local/ URL.
-
-        Runs in an executor thread because it performs blocking file I/O.
-        """
-        # async_sign_path returns /media/local/ai_task/image/<filename>.png?authSig=...
-        # The file lives at config_dir/media/local/ai_task/image/<filename>.png,
-        # so strip the leading /media/ before joining with config_dir/media/.
-        url_path = urlparse(signed_url).path
-        rel_path = url_path.removeprefix("/media/")
-        filename = pathlib.Path(rel_path).name
-        src = pathlib.Path(self._hass.config.config_dir) / "media" / rel_path
-        dst_dir = pathlib.Path(self._hass.config.config_dir) / "www" / "crop_planner"
-        dst_dir.mkdir(parents=True, exist_ok=True)
-        shutil.copy2(src, dst_dir / filename)
-        return f"/local/crop_planner/{filename}"
+        LOGGER.debug("Generated image for %r: %s", image_prompt, signed_url)
+        return signed_url
 
     def update_registry(self) -> None:
         """Associate the entity with the integration device."""

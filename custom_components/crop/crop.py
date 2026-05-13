@@ -55,8 +55,11 @@ class Crop(Entity):
         self._quantity = config.quantity
         self._species = config.species
         self._phases = config.phases
-        self._image_url = config.image_url
-        self._attr_entity_picture = self._image_url
+        if config.image_url is not None:
+            self._attr_entity_picture = config.image_url
+        else:
+            self._attr_entity_picture = None
+
         self._config_entries = []
         self._unique_id = config.id
         self._attr_unique_id = self._unique_id
@@ -101,8 +104,7 @@ class Crop(Entity):
             return
         for crop in coordinator.config_entry.data.get(CONF_CROPS, []):
             if crop.get("id") == self._unique_id:
-                self._image_url = crop.get("image_url")
-                self._attr_entity_picture = self._image_url
+                self._attr_entity_picture = crop.get("image_url")
                 break
 
     def _compute_state(self) -> str:

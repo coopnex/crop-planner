@@ -11,7 +11,7 @@ from homeassistant.helpers import entity_registry as er
 from homeassistant.helpers.entity import async_generate_entity_id
 from homeassistant.helpers.update_coordinator import CoordinatorEntity
 
-from .const import COORDINATOR, DOMAIN, LOGGER, AIState
+from .const import CONF_CROPS, COORDINATOR, DOMAIN, LOGGER, AIState
 
 if TYPE_CHECKING:
     from homeassistant.core import HomeAssistant
@@ -147,12 +147,45 @@ class FillCropFieldsButton(CoordinatorEntity, ButtonEntity):
             )
             return
         LOGGER.debug("Triggering crop field filling via %s", ai_entity_id)
-        await async_generate_data(
+        result = await async_generate_data(
             self._hass,
             task_name="enrich_crop_data",
             entity_id=ai_entity_id,
             instructions="",
         )
+        self._save_suggestions(result.data or {})
+
+    def _save_suggestions(self, data: dict) -> None:
+        """Merge AI suggestions into the config entry crops."""
+        suggestions: list[dict] = data.get("crops", [])
+        if not suggestions:
+            return
+        entity_registry = er.async_get(self._hass)
+        suggestions_by_id: dict[str, dict] = {}
+        for suggestion in suggestions:
+            reg_entry = entity_registry.async_get(suggestion.get("entity_id", ""))
+            if reg_entry and reg_entry.unique_id:
+                suggestions_by_id[reg_entry.unique_id] = suggestion
+
+        crops = list(self._entry.data.get(CONF_CROPS, []))
+        changed = False
+        for crop in crops:
+            suggestion = suggestions_by_id.get(crop.get("id", ""))
+            if suggestion is None:
+                continue
+            if not crop.get("species") and suggestion.get("species"):
+                crop["species"] = suggestion["species"]
+                changed = True
+            for phase, phase_data in (suggestion.get("phases") or {}).items():
+                existing = crop.setdefault("phases", {}).setdefault(phase, {})
+                for key in ("start", "end"):
+                    if not existing.get(key) and phase_data.get(key):
+                        existing[key] = phase_data[key]
+                        changed = True
+        if changed:
+            self._hass.config_entries.async_update_entry(
+                self._entry, data={**self._entry.data, CONF_CROPS: crops}
+            )
 
     def update_registry(self) -> None:
         """Associate the entity with the integration device."""

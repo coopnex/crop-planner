@@ -111,8 +111,9 @@
       },
       "remove_crops": {
         "title": "Eliminar cultivos",
-        "description": "Selecciona uno o más cultivos a eliminar.",
+        "description": "Selecciona uno o más cultivos a eliminar, o marca la casilla para eliminarlos todos.",
         "data": {
+          "remove_all": "Eliminar todos los cultivos",
           "crop_ids": "Cultivos"
         }
       },

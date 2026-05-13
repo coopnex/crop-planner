@@ -128,8 +128,9 @@
       },
       "remove_crops": {
         "title": "Remove crops",
-        "description": "Select one or more crops to remove.",
+        "description": "Select one or more crops to remove, or check the box to remove all.",
         "data": {
+          "remove_all": "Remove all crops",
           "crop_ids": "Crops"
         }
       },
