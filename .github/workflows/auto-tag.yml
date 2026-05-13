@@ -29,26 +29,3 @@ jobs:
           git config user.email "github-actions[bot]@users.noreply.github.com"
           git tag "v${{ steps.check.outputs.version }}"
           git push origin "v${{ steps.check.outputs.version }}"
-      - name: Package integration
-        if: steps.check.outputs.is_release == 'true'
-        run: |
-          cd custom_components
-          zip -r ../crop.zip crop/
-      - name: Determine pre-release flag
-        if: steps.check.outputs.is_release == 'true'
-        id: prerelease
-        run: |
-          VERSION="${{ steps.check.outputs.version }}"
-          if [[ "$VERSION" == *-* ]]; then
-            echo "is_prerelease=true" >> "$GITHUB_OUTPUT"
-          else
-            echo "is_prerelease=false" >> "$GITHUB_OUTPUT"
-          fi
-      - name: Create release
-        if: steps.check.outputs.is_release == 'true'
-        uses: softprops/action-gh-release@v2
-        with:
-          tag_name: v${{ steps.check.outputs.version }}
-          files: crop.zip
-          generate_release_notes: true
-          prerelease: ${{ steps.prerelease.outputs.is_prerelease }}

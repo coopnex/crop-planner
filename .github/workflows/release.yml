@@ -12,10 +12,6 @@ jobs:
       contents: write
     steps:
       - uses: actions/checkout@v4
-      - name: Package integration
-        run: |
-          cd custom_components
-          zip -r ../crop.zip crop/
       - name: Determine pre-release flag
         id: prerelease
         run: |
@@ -27,6 +23,5 @@ jobs:
       - name: Create release
         uses: softprops/action-gh-release@v2
         with:
-          files: crop.zip
           generate_release_notes: true
           prerelease: ${{ steps.prerelease.outputs.is_prerelease }}
