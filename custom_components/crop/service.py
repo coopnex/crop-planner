@@ -4,14 +4,15 @@ from __future__ import annotations
 
 import asyncio
 import pathlib
-import shutil
 from datetime import UTC, date, datetime
 from typing import TYPE_CHECKING
 from urllib.parse import urlparse
 
+import aiohttp
+
 import voluptuous as vol
 from homeassistant.config_entries import ConfigEntry, ConfigEntryState
-from homeassistant.const import SERVICE_RELOAD, Platform
+from homeassistant.const import SERVER_PORT, SERVICE_RELOAD, Platform
 from homeassistant.core import HomeAssistant, ServiceCall, callback
 from homeassistant.helpers import config_validation as cv
 from homeassistant.helpers import entity_registry as er
@@ -118,7 +119,7 @@ async def _enrich_crop(
     if fields:
         _patch_crop(hass, coordinator, crop_id, fields)
     if signed_image_url:
-        await hass.async_add_executor_job(_persist_image, hass, signed_image_url)
+        await _persist_image(hass, signed_image_url)
 
 
 async def invoke_enrich_crops_task(
@@ -187,19 +188,22 @@ async def invoke_image_generation_task(
         return None
 
 
-def _persist_image(hass: HomeAssistant, signed_url: str) -> str:
-    """
-    Copy the generated image to www/crop_planner/ and return the destination filename.
-
-    Runs in an executor thread because it performs blocking file I/O.
-    """
-    url_path = urlparse(signed_url).path
-    rel_path = url_path.lstrip("/")
-    src = pathlib.Path(hass.config.media_dirs.get("local", "/media")) / rel_path
-    dst_dir = pathlib.Path(hass.config.config_dir) / "www" / "crop_planner"
+def _write_image(dst_dir: pathlib.Path, filename: str, content: bytes) -> None:
+    """Write image bytes to disk. Runs in an executor thread."""
     dst_dir.mkdir(parents=True, exist_ok=True)
-    filename = pathlib.Path(rel_path).name
-    shutil.copy2(src, dst_dir / filename)
+    (dst_dir / filename).write_bytes(content)
+
+
+async def _persist_image(hass: HomeAssistant, relative_url: str) -> str:
+    """Fetch the AI-generated image via HTTP and save it to www/crop_planner/."""
+    url = f"http://localhost:{SERVER_PORT}{relative_url}"
+    filename = pathlib.Path(urlparse(relative_url).path).name
+    dst_dir = pathlib.Path(hass.config.config_dir) / "www" / "crop_planner"
+    async with aiohttp.ClientSession() as session:
+        async with session.get(url) as resp:
+            resp.raise_for_status()
+            content = await resp.read()
+    await hass.async_add_executor_job(_write_image, dst_dir, filename, content)
     return filename
 
 
