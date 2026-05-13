@@ -2,10 +2,7 @@
 
 from __future__ import annotations
 
-import pathlib
-import shutil
 from typing import TYPE_CHECKING
-from urllib.parse import urlparse
 
 import voluptuous as vol
 from homeassistant.components.ai_task import (

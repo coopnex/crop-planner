@@ -3,8 +3,11 @@
 from __future__ import annotations
 
 import asyncio
+import pathlib
+import shutil
 from datetime import UTC, date, datetime
 from typing import TYPE_CHECKING
+from urllib.parse import urlparse
 
 import voluptuous as vol
 from homeassistant.config_entries import ConfigEntry, ConfigEntryState
@@ -13,9 +16,6 @@ from homeassistant.core import HomeAssistant, ServiceCall, callback
 from homeassistant.helpers import config_validation as cv
 from homeassistant.helpers import entity_registry as er
 from homeassistant.helpers.service import async_register_admin_service
-import pathlib
-import shutil
-from urllib.parse import urlparse
 
 from .const import (
     ATTR_NAME,
@@ -118,11 +118,7 @@ async def _enrich_crop(
     if fields:
         _patch_crop(hass, coordinator, crop_id, fields)
     if signed_image_url:
-        await hass.async_add_executor_job(
-            _persist_image, hass, signed_image_url
-        )
-
-
+        await hass.async_add_executor_job(_persist_image, hass, signed_image_url)
 
 
 async def invoke_enrich_crops_task(
@@ -190,6 +186,7 @@ async def invoke_image_generation_task(
         )
         return None
 
+
 def _persist_image(hass: HomeAssistant, signed_url: str) -> str:
     """
     Copy the generated image to www/crop_planner/ and return the destination filename.
@@ -204,6 +201,7 @@ def _persist_image(hass: HomeAssistant, signed_url: str) -> str:
     filename = pathlib.Path(rel_path).name
     shutil.copy2(src, dst_dir / filename)
     return filename
+
 
 async def invoke_guess_species_task(
     crop_name: str, entry: ConfigEntry[CropPlannerData], hass: HomeAssistant
