@@ -11,8 +11,7 @@ from homeassistant.helpers import (
 from homeassistant.helpers.entity import async_generate_entity_id
 from homeassistant.helpers.update_coordinator import DataUpdateCoordinator
 
-from .const import CONF_CLIENT_ID, CONF_CLIENT_SECRET, DOMAIN, AIState
-from .openplantbook import OpenPlantbookHelper
+from .const import DOMAIN, AIState
 
 if TYPE_CHECKING:
     from logging import Logger
@@ -95,14 +94,6 @@ class CropPlannerCoordinator(DataUpdateCoordinator):
             )
             if device is not None:
                 self._device_id = device.id
-
-    def opb_helper(self) -> OpenPlantbookHelper | None:
-        """Return an OpenPlantbookHelper if credentials are configured, else None."""
-        client_id = self.config_entry.data.get(CONF_CLIENT_ID, "")
-        secret = self.config_entry.data.get(CONF_CLIENT_SECRET, "")
-        if client_id and secret:
-            return OpenPlantbookHelper(client_id, secret)
-        return None
 
     async def _async_update_data(self) -> Any:
         """Update data via library."""

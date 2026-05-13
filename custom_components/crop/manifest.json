@@ -16,9 +16,7 @@
     "documentation": "https://github.com/coopnex/crop-planner",
     "iot_class": "local_polling",
     "issue_tracker": "https://github.com/coopnex/crop-planner/issues",
-    "requirements": [
-        "openplantbook-sdk==0.6.1"
-    ],
+    "requirements": [],
     "homeassistant": "2026.5.0",
     "single_config_entry": true,
     "version": "0.8.6"

@@ -75,10 +75,3 @@ class AIState(StrEnum):
     FILLING_FIELDS = "filling_fields"
     GUESSING_SPECIES = "guessing_species"
     GENERATING_IMAGE = "generating_image"
-
-
-# OpenPlantBook constants
-CONF_CLIENT_ID = "client_id"
-CONF_CLIENT_SECRET = "client_secret"  # noqa: S105
-OPB_PID = "pid"
-OPB_DISPLAY_PID = "display_pid"

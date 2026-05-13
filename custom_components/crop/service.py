@@ -195,7 +195,7 @@ def _persist_image(hass: HomeAssistant, signed_url: str) -> str:
     """
     url_path = urlparse(signed_url).path
     rel_path = url_path.lstrip("/")
-    src = pathlib.Path(hass.config.media_dirs["local"])  / rel_path
+    src = pathlib.Path(hass.config.media_dirs["local"]) / rel_path
     dst_dir = pathlib.Path(hass.config.config_dir) / "www" / "crop_planner"
     dst_dir.mkdir(parents=True, exist_ok=True)
     filename = pathlib.Path(rel_path).name
@@ -267,7 +267,7 @@ def register_component_services(component: EntityComponent) -> None:
         name_: str = call.data[ATTR_NAME]
         crop_data = CropData(
             id=call.context.id,
-            name=name_.capitalize(),
+            name=name_[:1].upper() + name_[1:],
             quantity=call.data.get(ATTR_QUANTITY, 1),
             species=call.data.get(ATTR_SPECIES, None),
         )

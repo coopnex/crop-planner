@@ -29,7 +29,7 @@ def create_crop_data(data: Any) -> CropData:
     name_: str = data["name"]
     return CropData(
         id=data["id"],
-        name=name_.capitalize(),
+        name=name_[:1].upper() + name_[1:],
         quantity=data["quantity"],
         species=data.get("species", None),
         image_url=data.get("image_url", None),

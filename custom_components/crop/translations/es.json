@@ -3,11 +3,7 @@
     "step": {
       "user": {
         "title": "Planificador de Cultivos",
-        "description": "Configura la integración Planificador de Cultivos. Los cultivos se pueden añadir desde las opciones de la integración. Las credenciales de OpenPlantbook son opcionales — déjalas en blanco para omitir la búsqueda de especies.",
-        "data": {
-          "client_id": "Client ID de OpenPlantbook",
-          "client_secret": "Client Secret de OpenPlantbook"
-        }
+        "description": "Configura la integración Planificador de Cultivos. Los cultivos se pueden añadir mediante el servicio `crop.create_crop`."
       }
     }
   },
@@ -86,27 +82,8 @@
       "init": {
         "title": "Opciones del Planificador de Cultivos",
         "menu_options": {
-          "add_crop": "Añadir un nuevo cultivo",
           "remove_crops": "Eliminar cultivos",
-          "clear_todos": "Borrar todas las tareas",
-          "finish": "Hecho"
-        }
-      },
-      "add_crop": {
-        "title": "Añadir cultivo",
-        "description": "Añade un nuevo cultivo al planificador. Introduce un nombre de especie para buscar en OpenPlantbook.",
-        "data": {
-          "name": "Nombre del cultivo",
-          "quantity": "Cantidad",
-          "species": "Búsqueda de especie (opcional)"
-        }
-      },
-      "select_species": {
-        "title": "Seleccionar especie",
-        "description": "Elige la especie para **{name}** de los resultados de OpenPlantbook, o introduce un nuevo término de búsqueda para refinar.\n\n[Ver resultados en OpenPlantbook]({opb_url})",
-        "data": {
-          "species": "Especie",
-          "refine_search": "Refinar búsqueda"
+          "clear_todos": "Borrar todas las tareas"
         }
       },
       "remove_crops": {
@@ -117,22 +94,9 @@
           "crop_ids": "Cultivos"
         }
       },
-      "phases": {
-        "title": "Fases del ciclo de vida",
-        "description": "Establece las fechas de inicio de cada fase de crecimiento de **{name}**. Todos los campos son opcionales.",
-        "data": {
-          "sowing": "Siembra",
-          "germination": "Germinación",
-          "flowering": "Floración",
-          "harvest": "Cosecha"
-        }
-      },
       "clear_todos": {
         "title": "Borrar todas las tareas",
         "description": "Esto eliminará permanentemente todas las tareas de cultivo. Pulsa enviar para confirmar."
-      },
-      "finish": {
-        "title": "Hecho"
       }
     }
   },

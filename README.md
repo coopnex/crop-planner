@@ -3,7 +3,7 @@
 [![hacs_badge](https://img.shields.io/badge/HACS-Custom-41BDF5.svg?style=for-the-badge)](https://github.com/hacs/integration)
 [![Version](https://img.shields.io/badge/version-0.1.2-blue?style=for-the-badge)](https://github.com/coopnex/crop-planner/releases)
 
-A [Home Assistant](https://www.home-assistant.io/) custom integration for managing your crops. Track sowing dates, quantities, and species for each plant, view upcoming events in the HA calendar, and optionally enrich entries with images from the [OpenPlantbook](https://open.plantbook.io/) integration.
+A [Home Assistant](https://www.home-assistant.io/) custom integration for managing your crops. Track sowing dates, quantities, and species for each plant, view upcoming events in the HA calendar, and automatically enrich entries with AI-generated images.
 
 Each crop becomes a **sensor entity** (with name, quantity, sowing date, species, and a picture) and all crops are aggregated in a **calendar entity** so you can visualise your planting schedule from the HA dashboard.
 
@@ -28,8 +28,6 @@ Each crop becomes a **sensor entity** (with name, quantity, sowing date, species
 
 Go to **Settings → Devices & Services → Add Integration** and search for **Crop Planner**.
 
-> **Optional:** Install the [OpenPlantbook](https://github.com/open-plantbook/haintegration) integration first if you want automatic species images when creating crops.
-
 ---
 
 ## Usage
@@ -43,9 +41,7 @@ Call the `crop.create_crop` service (from **Developer Tools → Services** or an
 | `name` | Yes | Display name (e.g. `Tomate de colgar`) |
 | `quantity` | Yes | Number of plants (1–50) |
 | `sowing_date` | No | ISO date string, e.g. `2024-04-15` |
-| `species` | No | Species name for OpenPlantbook lookup |
-
-If `species` is provided and OpenPlantbook is installed, the entity picture is automatically populated from the plant database.
+| `species` | No | Species name (stored as an attribute) |
 
 ### Entities created
 
@@ -157,7 +153,7 @@ All contributions are licensed under the [MIT License](LICENSE).
 ## Roadmap
 
 - **Todo-list platform** — expose crops as HA to-do items for checklist-style management
-- **Harvest date tracking** — add expected harvest date based on species grow time from OpenPlantbook
+- **Harvest date tracking** — add expected harvest date based on species grow time
 - **Crop status lifecycle** — model states beyond `ok` (e.g. germinating, growing, harvested, failed)
 - **Translations (i18n)** — add `strings.json` and translation files for multi-language support, mainly for catalan and spanish
 - **Delete / archive service** — service call to remove or archive a crop entry

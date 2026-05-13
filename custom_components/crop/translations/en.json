@@ -2,12 +2,8 @@
   "config": {
     "step": {
       "user": {
-        "description": "Set up the Crop Planner integration. Crops can be added from the integration options. OpenPlantbook credentials are optional — leave blank to skip species lookup.",
-        "title": "Crop Planner",
-        "data": {
-          "client_id": "OpenPlantbook Client ID",
-          "client_secret": "OpenPlantbook Client Secret"
-        }
+        "description": "Set up the Crop Planner integration. Crops can be added via the `crop.create_crop` service.",
+        "title": "Crop Planner"
       }
     }
   },
@@ -102,28 +98,8 @@
       "init": {
         "title": "Crop Planner options",
         "menu_options": {
-          "add_crop": "Add a new crop",
           "remove_crops": "Remove crops",
-          "clear_todos": "Clear all chores",
-          "finish": "Done"
-        }
-      },
-      "add_crop": {
-        "title": "Add crop",
-        "description": "Add a new crop entity to the planner. Enter a species name to search OpenPlantbook.",
-        "data": {
-          "name": "Crop name",
-          "quantity": "Quantity",
-          "sowing_date": "Sowing date",
-          "species": "Species search (optional)"
-        }
-      },
-      "select_species": {
-        "title": "Select species",
-        "description": "Choose the species for **{name}** from the OpenPlantbook results, or enter a new search term below to refine.\n\n[Browse results on OpenPlantbook]({opb_url})",
-        "data": {
-          "species": "Species",
-          "refine_search": "Refine search"
+          "clear_todos": "Clear all chores"
         }
       },
       "remove_crops": {
@@ -134,22 +110,9 @@
           "crop_ids": "Crops"
         }
       },
-      "phases": {
-        "title": "Lifecycle Phases",
-        "description": "Set the expected date ranges for each growth phase of **{name}**. All fields are optional.",
-        "data": {
-          "sowing": "Sowing",
-          "germination": "Germination",
-          "flowering": "Flowering",
-          "harvest": "Harvest"
-        }
-      },
       "clear_todos": {
         "title": "Clear all chores",
         "description": "This will permanently delete all crop chores. Press submit to confirm."
-      },
-      "finish": {
-        "title": "Done"
       }
     }
   }
