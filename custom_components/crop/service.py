@@ -13,6 +13,9 @@ from homeassistant.core import HomeAssistant, ServiceCall, callback
 from homeassistant.helpers import config_validation as cv
 from homeassistant.helpers import entity_registry as er
 from homeassistant.helpers.service import async_register_admin_service
+import pathlib
+import shutil
+from urllib.parse import urlparse
 
 from .const import (
     ATTR_NAME,
@@ -99,9 +102,11 @@ async def _enrich_crop(
             fields["species"] = species
 
     # Step 2: generate an AI image.
-    image_url = await invoke_image_generation_task(crop_name, entry, hass)
-    if image_url:
-        fields["image_url"] = image_url
+    signed_image_url = await invoke_image_generation_task(crop_name, entry, hass)
+    if signed_image_url:
+        url_path = urlparse(signed_image_url).path
+        filename = pathlib.Path(url_path).name
+        fields["image_url"] = f"/local/crop_planner/{filename}"
 
     # Step 3: fill remaining fields (phases etc.) — returns suggestions without
     # touching the config entry.
@@ -112,6 +117,12 @@ async def _enrich_crop(
     # Single write at the end: merge all generated fields into the crop.
     if fields:
         _patch_crop(hass, coordinator, crop_id, fields)
+    if signed_image_url:
+        await hass.async_add_executor_job(
+            _persist_image, hass, signed_image_url
+        )
+
+
 
 
 async def invoke_enrich_crops_task(
@@ -179,6 +190,20 @@ async def invoke_image_generation_task(
         )
         return None
 
+def _persist_image(hass: HomeAssistant, signed_url: str) -> str:
+    """
+    Copy the generated image to www/crop_planner/ and return the destination filename.
+
+    Runs in an executor thread because it performs blocking file I/O.
+    """
+    url_path = urlparse(signed_url).path
+    rel_path = url_path.lstrip("/")
+    src = pathlib.Path(hass.config.config_dir) / "media" / rel_path
+    dst_dir = pathlib.Path(hass.config.config_dir) / "www" / "crop_planner"
+    dst_dir.mkdir(parents=True, exist_ok=True)
+    filename = pathlib.Path(rel_path).name
+    shutil.copy2(src, dst_dir / filename)
+    return filename
 
 async def invoke_guess_species_task(
     crop_name: str, entry: ConfigEntry[CropPlannerData], hass: HomeAssistant

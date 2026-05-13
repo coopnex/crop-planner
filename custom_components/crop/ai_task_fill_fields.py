@@ -30,12 +30,10 @@ if TYPE_CHECKING:
 
 _FILL_FIELDS_INSTRUCTIONS = (
     "You are an expert horticulturist. "
-    "For each crop listed in the context that is missing a species or has incomplete "
+    "For each crop listed in the context that has incomplete "
     "phase dates, fill in the blanks using your knowledge of the plant and the "
     "gardener's location and current date. "
     "Rules:\n"
-    "- If species is missing, infer the most likely botanical or common species name "
-    "  from the crop name and context.\n"
     "- For each phase (sowing, germination, flowering, harvest) that lacks a start "
     "  or end date, estimate sensible dates based on the species, climate of the "
     "  location, and any existing dates already recorded for that crop.\n"
@@ -59,7 +57,6 @@ _FILL_FIELDS_SCHEMA = vol.Schema(
             vol.Schema(
                 {
                     vol.Required("entity_id"): str,
-                    vol.Optional("species"): str,
                     vol.Optional("phases"): {
                         vol.Optional("sowing"): _PHASE_SCHEMA,
                         vol.Optional("germination"): _PHASE_SCHEMA,
@@ -172,9 +169,7 @@ class FillCropFieldsAITask(AITaskEntity):
 
     @staticmethod
     def _crop_is_incomplete(crop: dict[str, Any]) -> bool:
-        """Return True if the crop is missing species or any phase dates."""
-        if not crop.get("species"):
-            return True
+        """Return True if the crop is missing phase dates."""
         phases: dict[str, dict] = crop.get("phases", {})
         for phase in CROP_PHASES:
             p = phases.get(phase, {})
@@ -230,9 +225,6 @@ class FillCropFieldsAITask(AITaskEntity):
             if suggestion is None:
                 continue
             changed = False
-            if not crop.get("species") and suggestion.get("species"):
-                crop["species"] = suggestion["species"]
-                changed = True
             if suggestion.get("phases"):
                 changed = self._merge_phases(crop, suggestion["phases"]) or changed
             if changed:
