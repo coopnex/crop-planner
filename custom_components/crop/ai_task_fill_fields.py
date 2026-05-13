@@ -160,8 +160,6 @@ class FillCropFieldsAITask(AITaskEntity):
         else:
             LOGGER.debug("No suggestions returned by LLM.")
 
-        self._save_crops(crops)
-
         if summary:
             async_create(
                 self._hass,

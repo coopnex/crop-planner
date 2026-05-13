@@ -90,54 +90,59 @@ async def _enrich_crop(
         return
 
     entry = coordinator.config_entry
+    fields: dict = {}
 
-    # Step 1: guess species if not already provided, persist immediately so that
-    # subsequent AI tasks (FillCropFields) read the already-saved value.
+    # Step 1: guess species if not already provided.
     if not species:
         species = await invoke_guess_species_task(crop_name, entry, hass)
         if species:
-            _patch_crop(hass, coordinator, crop_id, {"species": species})
-            if not await _wait_for_reload(coordinator):
-                LOGGER.warning(
-                    "Config entry did not reload after species patch; continuing"
-                )
+            fields["species"] = species
 
-    # Step 2: generate an AI image and persist it before FillCropFields runs,
-    # so _save_crops never overwrites the entry without image_url.
+    # Step 2: generate an AI image.
     image_url = await invoke_image_generation_task(crop_name, entry, hass)
     if image_url:
-        _patch_crop(hass, coordinator, crop_id, {"image_url": image_url})
-        if not await _wait_for_reload(coordinator):
-            LOGGER.warning("Config entry did not reload after image patch; continuing")
+        fields["image_url"] = image_url
 
-    # Step 3: fill remaining fields (phases etc.) — at this point image_url is
-    # already in entry.data, so _save_crops will preserve it.
-    await invoke_enrich_crops_task(crop_id, coordinator.config_entry, hass)
+    # Step 3: fill remaining fields (phases etc.) — returns suggestions without
+    # touching the config entry.
+    phases = await invoke_enrich_crops_task(crop_id, entry, hass)
+    if phases:
+        fields["phases"] = phases
+
+    # Single write at the end: merge all generated fields into the crop.
+    if fields:
+        _patch_crop(hass, coordinator, crop_id, fields)
 
 
 async def invoke_enrich_crops_task(
     crop_id: str, entry: ConfigEntry[CropPlannerData], hass: HomeAssistant
-) -> None:
-    """Invoke the enrich_crop_data AI task for the given crop."""
+) -> dict | None:
+    """Invoke the enrich_crop_data AI task and return phase suggestions for crop_id."""
     entity_id = _resolve_ai_task_entity_id(hass, f"{entry.entry_id}_enrich_crop_data")
-    if entity_id:
-        try:
-            from homeassistant.components.ai_task import (  # noqa: PLC0415
-                async_generate_data,
-            )
+    if not entity_id:
+        LOGGER.debug("FillCropFieldsAITask entity not found; skipping field enrichment")
+        return None
+    try:
+        from homeassistant.components.ai_task import (  # noqa: PLC0415
+            async_generate_data,
+        )
 
-            result = await async_generate_data(
-                hass,
-                task_name="enrich_crop_data",
-                entity_id=entity_id,
-                instructions="",
-            )
-            LOGGER.debug("Enriched crop data for %s with result %r", crop_id, result)
-        except Exception as exc:  # noqa: BLE001
-            LOGGER.warning("FillCropFieldsAITask failed for %s: %s", crop_id, exc)
-    else:
-        LOGGER.debug("FillCropFieldsAITask entity not found; skipping image generation")
-        return
+        result = await async_generate_data(
+            hass,
+            task_name="enrich_crop_data",
+            entity_id=entity_id,
+            instructions="",
+        )
+        LOGGER.debug("Enriched crop data for %s with result %r", crop_id, result)
+        # Extract phase suggestions for this specific crop from the returned data.
+        erreg = er.async_get(hass)
+        for suggestion in (result.data or {}).get("crops", []):
+            reg_entry = erreg.async_get(suggestion.get("entity_id", ""))
+            if reg_entry and reg_entry.unique_id == crop_id:
+                return suggestion.get("phases")
+    except Exception as exc:  # noqa: BLE001
+        LOGGER.warning("FillCropFieldsAITask failed for %s: %s", crop_id, exc)
+    return None
 
 
 async def invoke_image_generation_task(
