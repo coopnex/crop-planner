@@ -12,6 +12,17 @@ jobs:
       contents: write
     steps:
       - uses: actions/checkout@v4
+      - name: Set up Python
+        uses: actions/setup-python@v6
+        with:
+          python-version: "3.14"
+          cache: "pip"
+      - name: Install requirements
+        run: python3 -m pip install --upgrade -r requirements.txt -r requirements_test.txt
+      - name: Lint
+        run: python3 -m ruff check .
+      - name: Format
+        run: python3 -m ruff format . --check
       - name: Determine pre-release flag
         id: prerelease
         run: |
