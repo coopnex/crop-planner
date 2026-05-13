@@ -25,8 +25,11 @@ from custom_components.crop.data import (
 )
 
 from .const import (
+    CONF_CROPS,
+    COORDINATOR,
     CROP_PHASES,
     CROP_PLATFORM,
+    DOMAIN,
     ICON,
     ChoreCategory,
 )
@@ -52,10 +55,8 @@ class Crop(Entity):
         self._quantity = config.quantity
         self._species = config.species
         self._phases = config.phases
-        if config.image_url is not None:
-            self._attr_entity_picture = config.image_url
-        else:
-            self._attr_entity_picture = None
+        self._image_url = config.image_url
+        self._attr_entity_picture = self._image_url
         self._config_entries = []
         self._unique_id = config.id
         self._attr_unique_id = self._unique_id
@@ -91,6 +92,18 @@ class Crop(Entity):
     def update(self) -> None:
         """Run on every update of the entities."""
         self._attr_state = self._compute_state()
+        self._refresh_image_url()
+
+    def _refresh_image_url(self) -> None:
+        """Sync entity picture from the live config entry (survives reloads)."""
+        coordinator = self._hass.data.get(DOMAIN, {}).get(COORDINATOR)
+        if coordinator is None:
+            return
+        for crop in coordinator.config_entry.data.get(CONF_CROPS, []):
+            if crop.get("id") == self._unique_id:
+                self._image_url = crop.get("image_url")
+                self._attr_entity_picture = self._image_url
+                break
 
     def _compute_state(self) -> str:
         """Derive state from recent chores or current phase."""
