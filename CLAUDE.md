@@ -59,6 +59,10 @@ manifest.json      # Integration metadata (version, dependencies)
 - Entity pictures fall back to `/local/crop_planner/default.png` when no `image_url` is set.
 - Services are registered at the domain level in `async_setup()` (YAML-based setup path), not per config entry.
 
+## Development Workflow
+
+See [docs/development-workflow.md](docs/development-workflow.md) for the full workflow: branching model, pre-commit checklist, UI testing with Playwright, PR guidelines, and release process.
+
 ## Linting Configuration
 
 Ruff and Pylint are configured in `pyproject.toml` and `.ruff.toml`. Max cyclomatic complexity is 25. The lint script only checks files changed since the merge-base, so run it regularly during development.
