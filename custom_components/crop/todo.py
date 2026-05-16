@@ -131,9 +131,15 @@ class CropTodoList(TodoListEntity):
         crop_entity_id = stored_item.get("crop_entity_id")
         if not crop_entity_id:
             return
+        state = self._hass.states.get(crop_entity_id)
+        name = (
+            state.attributes.get("friendly_name", crop_entity_id)
+            if state
+            else crop_entity_id
+        )
         async_log_entry(
             self._hass,
-            name=crop_entity_id,
+            name=name,
             message=f"{item.summary}",
             domain=DOMAIN,
             entity_id=crop_entity_id,
