@@ -153,6 +153,16 @@ class CropTodoList(TodoListEntity):
         erreg = er.async_get(self._hass)
         erreg.async_update_entity(self.entity_id, device_id=self._device_id)
 
+    async def _handle_entry_update(
+        self,
+        hass: HomeAssistant,  # noqa: ARG002
+        entry: CropPlannerConfigEntry,  # noqa: ARG002
+    ) -> None:
+        """Reload items when the config entry data changes."""
+        self._load_items()
+        self.async_write_ha_state()
+
     async def async_added_to_hass(self) -> None:
         """Register in the entity registry once added to hass."""
         self.update_registry()
+        self.async_on_remove(self._entry.add_update_listener(self._handle_entry_update))
