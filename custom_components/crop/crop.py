@@ -22,6 +22,8 @@ from homeassistant.helpers.entity import (
 
 from custom_components.crop.data import (
     CropData,
+    CropPhase,
+    _parse_date,
 )
 
 from .const import (
@@ -125,6 +127,23 @@ class Crop(Entity):
                 return phase
 
         return STATE_OK
+
+    def update_from_dict(self, data: dict) -> None:
+        """Refresh entity data in-place from a config-entry crop dict."""
+        name_ = data.get("name", self._attr_name)
+        self._attr_name = name_[:1].upper() + name_[1:]
+        self._quantity = data.get("quantity", self._quantity)
+        self._species = data.get("species", self._species)
+        self._attr_entity_picture = data.get("image_url")
+        self._phases = {
+            phase_name: CropPhase(
+                start=_parse_date(phase_data.get("start")),
+                end=_parse_date(phase_data.get("end")),
+            )
+            for phase_name, phase_data in data.get("phases", {}).items()
+            if phase_name in CROP_PHASES
+        }
+        self._attr_state = self._compute_state()
 
     def update_registry(self) -> None:
         """Update registry with correct data."""
