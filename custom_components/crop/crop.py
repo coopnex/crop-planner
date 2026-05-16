@@ -110,23 +110,19 @@ class Crop(Entity):
                 break
 
     def _compute_state(self) -> str:
-        """Derive state from recent chores or current phase."""
+        """Derive state from current lifecycle phase."""
         today = datetime.now(tz=UTC).date()
-
-        # 2. Current lifecycle phase
+        last_open_phase = None
         for phase in CROP_PHASES:
             phase_data = self._phases.get(phase)
-            if phase_data is None:
+            if phase_data is None or not phase_data.start:
                 continue
-            start = phase_data.start
-            end = phase_data.end
-            if start and end:
-                if start <= today <= end:
+            if phase_data.end:
+                if phase_data.start <= today <= phase_data.end:
                     return phase
-            elif start and today >= start:
-                return phase
-
-        return STATE_OK
+            elif today >= phase_data.start:
+                last_open_phase = phase
+        return last_open_phase or STATE_OK
 
     def update_from_dict(self, data: dict) -> None:
         """Refresh entity data in-place from a config-entry crop dict."""
