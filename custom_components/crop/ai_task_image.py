@@ -30,10 +30,16 @@ if TYPE_CHECKING:
 _IMAGE_PROMPT_INSTRUCTIONS = (
     "You are a botanical photographer's assistant. "
     "Given a plant name, write a concise image generation prompt (max 40 words) "
-    "that will produce a close-up, centered photograph of the plant's most "
-    "recognisable fruit or flower. "
-    "The subject should fill the frame against a neutral background. "
-    "Be specific about the species and the part of the plant to depict. "
+    "that will produce a beautiful, centered photograph of the plant's most "
+    "recognisable and appetising part. "
+    "Choose the subject based on what the plant is grown for: "
+    "- Fruiting crops (tomato, pepper, courgette…): close-up of the ripe fruit. "
+    "- Leafy / culinary herbs (lettuce, spinach, mint, basil, chard…): "
+    "  the whole plant or a tight shot of fresh leaves — never a flower. "
+    "- Root vegetables (carrot, beetroot, radish…): harvested roots with foliage. "
+    "- Flowering crops grown for their flower (artichoke, broccoli…): the flower head. "
+    "The subject should fill the frame against a neutral or soft natural background. "
+    "Be specific about the species and the chosen part. "
     "Return your prompt in the 'response' field."
 )
 
@@ -109,7 +115,8 @@ class GeneratePlantImageAITask(AITaskEntity):
         image_prompt: str = ((prompt_result.data or {}).get("response") or "").strip()
         if not image_prompt:
             image_prompt = (
-                f"Close-up centered photograph of {plant_name} fruit or flower, "
+                f"Beautiful centered photograph of {plant_name}, "
+                "showing the most recognisable edible part of the plant, "
                 "filling the frame, neutral background, sharp detail."
             )
         LOGGER.debug("Image generation prompt for %r: %s", plant_name, image_prompt)
