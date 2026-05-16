@@ -93,23 +93,20 @@ async def async_unload_entry(
     hass: HomeAssistant, entry: CropPlannerConfigEntry
 ) -> bool:
     """Unload a config entry."""
+    # This is called when an entry/configured device is to be removed. The class
+    # needs to unload itself, and remove callbacks. See the classes for further
+    # details
     for crop in entry.runtime_data.crops:
         LOGGER.info("Unloading crop: %s", crop)
-        hass.states.async_remove(crop.entity_id)
-    entry.async_create_task(
-        hass, hass.config_entries.async_unload_platforms(entry, PLATFORMS)
-    )
-    return True
 
-
-async def async_remove_entry(
-    hass: HomeAssistant, entry: CropPlannerConfigEntry
-) -> None:
-    """Clean up entity registry entries when the integration is deleted."""
     erreg = er.async_get(hass)
     for entity in entry.runtime_data.crops:
         if entity.registry_entry is not None:
             erreg.async_remove(entity.registry_entry.entity_id)
+    entry.async_create_task(
+        hass, hass.config_entries.async_unload_platforms(entry, PLATFORMS)
+    )
+    return True
 
 
 async def async_reload_entry(
