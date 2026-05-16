@@ -18,7 +18,7 @@ Branch prefix by task type:
 
 | Prefix  | When to use                                  |
 |---------|----------------------------------------------|
-| `feat/` | New feature or behaviour                     |
+| `feature/` | New feature or behaviour                  |
 | `fix/`  | Bug fix                                      |
 | `chore/`| Tooling, CI, dependency updates, refactoring |
 
@@ -56,6 +56,14 @@ yarn start
 Both services must be running before running Playwright tests.
 
 ## Pushing and Pull Requests
+
+PR titles must use a prefix matching the branch type, followed by a short imperative description:
+
+| Branch prefix | PR title prefix | Example                             |
+|---------------|-----------------|-------------------------------------|
+| `feature/`    | `feature:`      | `feature: Add crop image gallery`   |
+| `fix/`        | `fix:`          | `fix: Correct sowing date timezone` |
+| `chore/`      | `chore:`        | `chore: Refactor service logic`     |
 
 After pushing the branch, verify that the PR description accurately reflects the actual changes. Update it if the description is stale or incomplete before requesting review.
 
