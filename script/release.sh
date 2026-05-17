@@ -105,8 +105,10 @@ if [[ -n "$ARG_PRE" ]]; then
   PRE_SUFFIX="$ARG_PRE"
   NEW_VERSION="$NEW_VERSION-$PRE_SUFFIX"
 elif $IS_MAIN; then
-  read -rp "Enter pre-release suffix (e.g. RC1, beta-1) or leave empty for a stable release: " PRE_SUFFIX
-  [[ -n "$PRE_SUFFIX" ]] && NEW_VERSION="$NEW_VERSION-$PRE_SUFFIX"
+  if ! $ARG_YES; then
+    read -rp "Enter pre-release suffix (e.g. RC1, beta-1) or leave empty for a stable release: " PRE_SUFFIX
+    [[ -n "$PRE_SUFFIX" ]] && NEW_VERSION="$NEW_VERSION-$PRE_SUFFIX"
+  fi
 else
   while true; do
     read -rp "Enter pre-release suffix (e.g. RC1, beta-1): " PRE_SUFFIX
