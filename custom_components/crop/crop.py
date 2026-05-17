@@ -69,7 +69,7 @@ class Crop(Entity):
             f"{CROP_PLATFORM}.{{}}", config.name, current_ids={}
         )
         self._attr_icon = ICON
-        self._attr_state = STATE_OK  # computed properly on first update()
+        self._attr_state = self._compute_state()
 
     @property
     def name(self) -> str:
