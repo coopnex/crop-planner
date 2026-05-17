@@ -11,7 +11,7 @@ from homeassistant.helpers.discovery import load_platform
 from homeassistant.helpers.entity_component import EntityComponent
 from homeassistant.loader import async_get_loaded_integration
 
-from .const import COMPONENT, COORDINATOR, CROP_PLATFORM, DOMAIN, LOGGER
+from .const import COMPONENT, CONF_CROPS, COORDINATOR, CROP_PLATFORM, DOMAIN, LOGGER
 from .coordinator import (
     CropPlannerConfigEntry,
     CropPlannerCoordinator,
@@ -113,5 +113,18 @@ async def async_reload_entry(
     hass: HomeAssistant,
     entry: ConfigEntry,
 ) -> None:
-    """Reload config entry."""
+    """Reload config entry, or update entities in-place if only crop data changed."""
+    runtime_data = getattr(entry, "runtime_data", None)
+    if runtime_data is not None:
+        new_crops_data = entry.data.get(CONF_CROPS, [])
+        new_ids = {c["id"] for c in new_crops_data}
+        old_ids = {crop.unique_id for crop in runtime_data.crops}
+        if new_ids == old_ids:
+            crops_by_id = {c["id"]: c for c in new_crops_data}
+            for crop in runtime_data.crops:
+                crop_dict = crops_by_id.get(crop.unique_id)
+                if crop_dict:
+                    crop.update_from_dict(crop_dict)
+                    crop.async_write_ha_state()
+            return
     await hass.config_entries.async_reload(entry.entry_id)

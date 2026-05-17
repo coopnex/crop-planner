@@ -6,7 +6,7 @@ Crop Planner Home Assistant integration to represent planted crops, their
 quantities, and device/entity registration behavior.
 """
 
-from datetime import UTC, datetime
+from datetime import UTC, date, datetime
 from typing import ClassVar
 
 from homeassistant.components.sensor import SensorDeviceClass
@@ -22,6 +22,8 @@ from homeassistant.helpers.entity import (
 
 from custom_components.crop.data import (
     CropData,
+    CropPhase,
+    _parse_date,
 )
 
 from .const import (
@@ -108,23 +110,45 @@ class Crop(Entity):
                 break
 
     def _compute_state(self) -> str:
-        """Derive state from recent chores or current phase."""
-        today = datetime.now(tz=UTC).date()
+        """
+        Derive state from current lifecycle phase.
 
-        # 2. Current lifecycle phase
+        When multiple phases are simultaneously active (overlapping ranges),
+        the one with the latest start date wins. Ties are broken by lifecycle
+        order (later stage preferred), since CROP_PHASES is ordered and we
+        use >= when comparing start dates.
+        """
+        today = datetime.now(tz=UTC).date()
+        best_phase: str | None = None
+        best_start: date | None = None
         for phase in CROP_PHASES:
             phase_data = self._phases.get(phase)
-            if phase_data is None:
+            if phase_data is None or not phase_data.start:
                 continue
             start = phase_data.start
             end = phase_data.end
-            if start and end:
-                if start <= today <= end:
-                    return phase
-            elif start and today >= start:
-                return phase
+            active = (start <= today <= end) if end else (today >= start)
+            if active and (best_start is None or start >= best_start):
+                best_phase = phase
+                best_start = start
+        return best_phase or STATE_OK
 
-        return STATE_OK
+    def update_from_dict(self, data: dict) -> None:
+        """Refresh entity data in-place from a config-entry crop dict."""
+        name_ = data.get("name", self._attr_name)
+        self._attr_name = name_[:1].upper() + name_[1:]
+        self._quantity = data.get("quantity", self._quantity)
+        self._species = data.get("species", self._species)
+        self._attr_entity_picture = data.get("image_url")
+        self._phases = {
+            phase_name: CropPhase(
+                start=_parse_date(phase_data.get("start")),
+                end=_parse_date(phase_data.get("end")),
+            )
+            for phase_name, phase_data in data.get("phases", {}).items()
+            if phase_name in CROP_PHASES
+        }
+        self._attr_state = self._compute_state()
 
     def update_registry(self) -> None:
         """Update registry with correct data."""
