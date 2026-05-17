@@ -139,5 +139,8 @@
         }
       }
     }
+  },
+  "ui": {
+    "lifecycle": "Ciclo de vida"
   }
 }

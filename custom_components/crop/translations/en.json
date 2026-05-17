@@ -115,5 +115,8 @@
         "description": "This will permanently delete all crop chores. Press submit to confirm."
       }
     }
+  },
+  "ui": {
+    "lifecycle": "Lifecycle"
   }
 }

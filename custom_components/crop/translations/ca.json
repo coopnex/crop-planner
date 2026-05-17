@@ -99,5 +99,8 @@
         "description": "Això eliminarà permanentment totes les tasques de cultiu. Prem enviar per confirmar."
       }
     }
+  },
+  "ui": {
+    "lifecycle": "Cicle de vida"
   }
 }
