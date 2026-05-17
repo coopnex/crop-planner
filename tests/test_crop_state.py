@@ -186,3 +186,76 @@ def test_between_two_bounded_phases_returns_ok(freezer):
         (PHASE_FLOWERING, date(2026, 6, 1), date(2026, 8, 31)),
     )
     assert crop._compute_state() == STATE_OK
+
+
+# ── Overlapping phases — latest start wins ────────────────────────────────────
+
+
+def test_two_overlapping_bounded_phases_later_start_wins(freezer):
+    """When two bounded phases both cover today, the one with the later start wins."""
+    freezer.move_to("2026-05-16")
+    crop = _make_crop(
+        (PHASE_SOWING, date(2026, 3, 1), date(2026, 7, 31)),  # active, early start
+        (PHASE_GERMINATION, date(2026, 4, 1), date(2026, 7, 31)),  # active, later start
+    )
+    assert crop._compute_state() == PHASE_GERMINATION
+
+
+def test_bounded_and_open_overlap_open_has_later_start_wins(freezer):
+    """Open-ended phase with a later start should win over an active bounded phase."""
+    freezer.move_to("2026-05-16")
+    crop = _make_crop(
+        (
+            PHASE_SOWING,
+            date(2026, 3, 1),
+            date(2026, 7, 31),
+        ),  # bounded, active, early start
+        (PHASE_GERMINATION, date(2026, 4, 1), None),  # open, active, later start
+    )
+    assert crop._compute_state() == PHASE_GERMINATION
+
+
+def test_bounded_and_open_overlap_bounded_has_later_start_wins(freezer):
+    """Bounded phase with a later start should win over an earlier open-ended phase."""
+    freezer.move_to("2026-05-16")
+    crop = _make_crop(
+        (PHASE_SOWING, date(2026, 3, 1), None),  # open, active, early start
+        (
+            PHASE_GERMINATION,
+            date(2026, 4, 1),
+            date(2026, 7, 31),
+        ),  # bounded, active, later start
+    )
+    assert crop._compute_state() == PHASE_GERMINATION
+
+
+def test_three_overlapping_phases_latest_start_wins(freezer):
+    """With three simultaneously active phases, the latest-started one wins."""
+    freezer.move_to("2026-06-01")
+    crop = _make_crop(
+        (PHASE_SOWING, date(2026, 3, 1), date(2026, 8, 31)),  # active
+        (PHASE_GERMINATION, date(2026, 4, 1), date(2026, 8, 31)),  # active, later
+        (PHASE_FLOWERING, date(2026, 5, 1), date(2026, 8, 31)),  # active, latest
+    )
+    assert crop._compute_state() == PHASE_FLOWERING
+
+
+def test_overlapping_phases_same_start_later_lifecycle_stage_wins(freezer):
+    """Tie on start date: the phase later in the lifecycle order wins."""
+    freezer.move_to("2026-05-16")
+    crop = _make_crop(
+        (PHASE_SOWING, date(2026, 4, 1), date(2026, 7, 31)),
+        (PHASE_GERMINATION, date(2026, 4, 1), date(2026, 7, 31)),
+    )
+    assert crop._compute_state() == PHASE_GERMINATION
+
+
+def test_inactive_overlap_candidate_does_not_affect_result(freezer):
+    """An expired bounded phase does not count as a candidate even if it overlapped."""
+    freezer.move_to("2026-06-01")
+    crop = _make_crop(
+        (PHASE_SOWING, date(2026, 3, 1), date(2026, 5, 31)),  # ended
+        (PHASE_GERMINATION, date(2026, 4, 1), date(2026, 4, 30)),  # ended, later start
+        (PHASE_FLOWERING, date(2026, 6, 1), date(2026, 8, 31)),  # active
+    )
+    assert crop._compute_state() == PHASE_FLOWERING

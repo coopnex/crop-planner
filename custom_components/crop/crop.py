@@ -6,7 +6,7 @@ Crop Planner Home Assistant integration to represent planted crops, their
 quantities, and device/entity registration behavior.
 """
 
-from datetime import UTC, datetime
+from datetime import UTC, date, datetime
 from typing import ClassVar
 
 from homeassistant.components.sensor import SensorDeviceClass
@@ -110,19 +110,28 @@ class Crop(Entity):
                 break
 
     def _compute_state(self) -> str:
-        """Derive state from current lifecycle phase."""
+        """
+        Derive state from current lifecycle phase.
+
+        When multiple phases are simultaneously active (overlapping ranges),
+        the one with the latest start date wins. Ties are broken by lifecycle
+        order (later stage preferred), since CROP_PHASES is ordered and we
+        use >= when comparing start dates.
+        """
         today = datetime.now(tz=UTC).date()
-        last_open_phase = None
+        best_phase: str | None = None
+        best_start: date | None = None
         for phase in CROP_PHASES:
             phase_data = self._phases.get(phase)
             if phase_data is None or not phase_data.start:
                 continue
-            if phase_data.end:
-                if phase_data.start <= today <= phase_data.end:
-                    return phase
-            elif today >= phase_data.start:
-                last_open_phase = phase
-        return last_open_phase or STATE_OK
+            start = phase_data.start
+            end = phase_data.end
+            active = (start <= today <= end) if end else (today >= start)
+            if active and (best_start is None or start >= best_start):
+                best_phase = phase
+                best_start = start
+        return best_phase or STATE_OK
 
     def update_from_dict(self, data: dict) -> None:
         """Refresh entity data in-place from a config-entry crop dict."""
